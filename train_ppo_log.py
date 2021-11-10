@@ -95,7 +95,7 @@ def main():
     max_size = max(len_list)
 
     # 总步数
-    max_train_timestep = int(60000)
+    max_train_timestep = int(20000)
 
     # 每episode的步数
     max_ep_len = 200
