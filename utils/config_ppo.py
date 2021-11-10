@@ -5,8 +5,8 @@ parser = argparse.ArgumentParser()
 
 
 # cuda的GPU序号
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
+# device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 
 # backbone的参数
 backboneParam_dict = {

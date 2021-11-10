@@ -288,7 +288,7 @@ def main():
             state_ = torch_geometric.data.Batch.from_data_list(env.graphs).clone()
             state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
             state_.edge_attr = Variable(state_.edge_attr.to(device))
-                # tqdm更新显示
+            # tqdm更新显示
                 # pbar.set_postfix({'ratio': env.last_ratio_list.mean()})
                 # pbar.update(1)
 

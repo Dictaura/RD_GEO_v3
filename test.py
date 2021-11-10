@@ -4,7 +4,8 @@ import Levenshtein
 import RNA
 import numpy as np
 import random
-from random import shuffle
+from random import shuffle, sample
+
 
 import torch
 
@@ -12,9 +13,11 @@ from utils.rna_lib import edge_distance, get_edge_h
 
 root = os.path.dirname(os.path.realpath(__file__))
 
-# data_dir = root + '/data/processed/rfam_learn/train/all.pt'
-# dataset = torch.load(data_dir)
-# dataset = sample(dataset, 10)
+data_dir = root + '/data/processed/rfam_learn/train/all.pt'
+dataset = torch.load(data_dir)
+dataset = sample(dataset, 10)
+
+print(1)
 
 # real_edge = get_edge_h('.........\n')
 #
