@@ -7,7 +7,7 @@ import torch_geometric.data
 from tqdm import tqdm
 from utils.rna_lib import get_distance_from_graph, get_energy_graph, forbidden_actions_pair
 from collections import namedtuple
-from utils.config_ppo import device
+from utils.config_ppo import device, num_change
 from networks.RD_Net_GEO import BackboneNet, ActorNet, CriticNet
 from torch.autograd import Variable
 from torch import no_grad, clamp
@@ -18,7 +18,6 @@ import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
 from torch.distributions import Categorical
 
-num_change = 6
 
 Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
 

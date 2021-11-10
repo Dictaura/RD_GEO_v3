@@ -8,6 +8,8 @@ parser = argparse.ArgumentParser()
 # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device("cpu")
 
+num_change = 4
+
 # backbone的参数
 backboneParam_dict = {
     'in_size': 4,

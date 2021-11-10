@@ -146,11 +146,11 @@ class PPO_Log(nn.Module):
         # self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
         # self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())), lr=self.lr_c)
         # self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
-        self.optimizer = torch.optim.Adam([
-            {'params': self.backbone.parameters()}
-        ]
-            filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())),
-            lr=self.lr_c)
+        # self.optimizer = torch.optim.Adam([
+        #     {'params': self.backbone.parameters()}
+        # ]
+        #     filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())),
+        #     lr=self.lr_c)
         # 设置网络参数是否训练
         # for param in self.backbone.parameters():
         #     param.requires_grad = True

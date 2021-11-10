@@ -6,7 +6,7 @@ from utils.config_ppo import device, backboneParam, criticParam, actorParam
 import os
 import torch
 import torch_geometric
-from RL_lib.PPO import PPO, Transition
+from RL_lib.ppo import PPO, Transition
 import time
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
