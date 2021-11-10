@@ -13,7 +13,7 @@ class GAT_Multi_heads(nn.Module):
         self.n_heads = n_heads
 
         self.GAT = conv_g.GATConv(self.in_size, self.hide_size, self.n_heads, bias=False)
-        self.GCN = conv_g.GCNConv(self.hide_size * self.n_heads, self.out_size, bias=False, normalize=True)
+        self.GCN = conv_g.GCNConv(self.hide_size * self.n_heads, self.out_size, bias=False, normalize=False)
 
     def forward(self, x, edge_index, edge_weight=None):
         y_gat = self.GAT(x, edge_index)
