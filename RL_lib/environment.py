@@ -7,7 +7,8 @@ import numpy as np
 import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
-    get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph
+    get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
+    get_distance_from_graph
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -97,8 +98,16 @@ class RNA_Graphs_Env(gym.Env):
 
         self.last_energy_list = self.pool.map(get_energy_from_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
-        self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+
+        if self.distance_type == 'hamming':
+            self.distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+        elif self.distance_type == 'hamming_norm':
+            self.distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+        elif self.distance_type == 'topo':
+            self.distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        # self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
+
         forbid_work = partial(forbidden_actions_pair, action_space=self.action_space)
         self.forbidden_actions_list = list(self.pool.map(forbid_work, self.graphs))
 
@@ -121,7 +130,7 @@ class RNA_Graphs_Env(gym.Env):
             self.forbidden_actions_list[i] = forbidden_actions_pair(self.graphs[i])
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
 
-    def step(self, actions, ep, reward_type='ratio', done_type='ratio'):
+    def step(self, actions, ep):
         """
         环境接受并执行动作
         :param actions: 动作编号
@@ -139,23 +148,29 @@ class RNA_Graphs_Env(gym.Env):
         if ep % self.cal_freq == 0:
             energy_list = self.pool.map(get_energy_from_graph, self.graphs)
             energy_list = np.array(list(energy_list))
-            # distance_list = pool.map(get_distance_from_graph_norm, self.graphs)
-            distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+
+            if self.distance_type == 'hamming':
+                distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+            elif self.distance_type == 'hamming_norm':
+                distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+            elif self.distance_type == 'topo':
+                distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
 
             distance_list = np.array(list(distance_list))
             # ratio_list = np.array(list(map(get_pair_ratio, self.graphs)))
+
         else:
             energy_list = self.last_energy_list
             distance_list = self.last_distance_list
             # ratio_list = self.last_ratio_list
 
         # 根据reward_type计算reward
-        if reward_type is 'ratio':
+        if self.reward_type is 'ratio':
             pass
             # reward_list = ratio_list #- self.last_ratio_list
-        elif reward_type is 'energy':
+        elif self.reward_type is 'energy':
             reward_list = self.last_energy_list - energy_list
-        elif reward_type is 'distance':
+        elif self.reward_type is 'distance':
             reward_list = self.last_distance_list - distance_list
             # reward_list = [(1 - distance / length) for distance, length in zip(distance_list, self.len_list)]
             # reward_list = 1 - distance_list
