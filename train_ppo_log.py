@@ -118,7 +118,7 @@ def main():
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
-    reward_type = 'energy'
+    reward_type = 'distance'
     done_type = 'distance'
 
     env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env)
