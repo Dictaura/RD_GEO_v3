@@ -6,11 +6,8 @@ from torch.nn import functional as F
 import numpy as np
 import os
 from torch_geometric.data import DataLoader as DataLoader_g
-from utils.rna_lib import random_init_sequence, get_distance_from_graph, get_energy_graph, rna_act, get_pair_ratio, \
-    seq_onehot2Base, \
-    random_init_sequence_pair, rna_act_pair_multi, graph_padding, forbidden_actions_pair, \
-    get_distance_from_graph_norm, get_edge_h, edge_distance, get_topology_distance, forbidden_actions_pair_4, \
-    rna_act_pair_4, random_init_sequence_pair_4
+from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
+    get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -90,7 +87,7 @@ class RNA_Graphs_Env(gym.Env):
             init_work = partial(random_init_sequence, max_size=max_size)
             init_result = self.pool.map(init_work, dotB_list)
         else:
-            init_work = partial(random_init_sequence_pair, max_size=max_size)
+            init_work = partial(random_init_sequence_pair, max_size=max_size, action_space=self.action_space)
             init_result = self.pool.map(init_work, dotB_list, edge_index_list)
 
         init_result = list(init_result)
@@ -98,11 +95,12 @@ class RNA_Graphs_Env(gym.Env):
         for i in range(len(self.graphs)):
             self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]
 
-        self.last_energy_list = self.pool.map(get_energy_graph, self.graphs)
+        self.last_energy_list = self.pool.map(get_energy_from_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
         self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
-        self.forbidden_actions_list = list(self.pool.map(forbidden_actions_pair, self.graphs))
+        forbid_work = partial(forbidden_actions_pair, action_space=self.action_space)
+        self.forbidden_actions_list = list(self.pool.map(forbid_work, self.graphs))
 
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
 
@@ -117,13 +115,11 @@ class RNA_Graphs_Env(gym.Env):
         self.len_list = [len(graph.y['dotB']) for graph in self.graphs]
         for i in range(len(self.graphs)):
             self.graphs[i].y['seq_base'], self.graphs[i].x = random_init_sequence(self.graphs[i].y['dotB'], self.graphs[i].x.shape[0])
-            self.last_energy_list[i] = get_energy_graph(self.graphs[i])
+            self.last_energy_list[i] = get_energy_from_graph(self.graphs[i])
             self.last_distance_list[i] = get_distance_from_graph_norm(self.graphs[i])
             # self.last_ratio_list[i] = get_pair_ratio(self.graphs[i])
             self.forbidden_actions_list[i] = forbidden_actions_pair(self.graphs[i])
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
-
-
 
     def step(self, actions, ep, reward_type='ratio', done_type='ratio'):
         """
@@ -132,9 +128,8 @@ class RNA_Graphs_Env(gym.Env):
         :param reward_type: reward
         :return:
         """
-        # result = pool.map(rna_act_pair, actions, self.graphs, self.forbidden_actions_list)
-        args = zip(actions.cpu(), self.graphs, self.forbidden_actions_list)
-        result = self.pool.map(rna_act_pair_multi, args)
+        work = partial(rna_act_pair, action_space=self.action_space)
+        result = self.pool.map(work, actions.cpu(), self.graphs, self.forbidden_actions_list)
 
         results = list(result)
         results = list(zip(*results))
@@ -142,7 +137,7 @@ class RNA_Graphs_Env(gym.Env):
         self.forbidden_actions_list = list(results[1])
 
         if ep % self.cal_freq == 0:
-            energy_list = self.pool.map(get_energy_graph, self.graphs)
+            energy_list = self.pool.map(get_energy_from_graph, self.graphs)
             energy_list = np.array(list(energy_list))
             # distance_list = pool.map(get_distance_from_graph_norm, self.graphs)
             distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
@@ -214,141 +209,9 @@ class RNA_Graphs_Env(gym.Env):
 
         return graph, remove_id, dotB, sequence, energy, distance
 
-    def reset_4(self):
-        """
-        环境的复位函数
-        :return: 复位的图
-        """
-        self.graphs = torch_geometric.data.Batch.from_data_list(self.graphs_).clone().to_data_list()
-        self.last_energy_list = np.zeros(len(self.graphs))
-        self.last_distance_list = np.zeros(len(self.graphs))
-        # self.last_ratio_list = np.zeros(len(self.graphs))
-        self.len_list = [len(graph.y['dotB']) for graph in self.graphs]
-        self.ids = list(range(len(self.graphs)))
-
-        seq_list = [graph.y['seq_base'] for graph in self.graphs]
-        dotB_list = [graph.y['dotB'] for graph in self.graphs]
-        self.aim_edge_h_list = list(self.pool.map(get_edge_h, dotB_list))
-        # self.aim_edge_h_list = get_edge_h(dotB_list[0])
-
-        max_size = self.graphs[0].x.shape[0]
-        init_work = partial(random_init_sequence, max_size=max_size)
-        init_result = self.pool.map(init_work, dotB_list)
-
-        init_result = list(init_result)
-        init_result = list(zip(*init_result))
-        for i in range(len(self.graphs)):
-            self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]
-
-        self.last_energy_list = self.pool.map(get_energy_graph, self.graphs)
-        self.last_energy_list = np.array(list(self.last_energy_list))
-        # self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
-        self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
-        self.last_distance_list = np.array(list(self.last_distance_list))
-        self.forbidden_actions_list = list(self.pool.map(forbidden_actions_pair_4, self.graphs))
 
 
-        return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
 
-    def reset_pair_4(self):
-        """
-        环境的复位函数
-        :return: 复位的图
-        """
-        self.graphs = torch_geometric.data.Batch.from_data_list(self.graphs_).clone().to_data_list()
-        self.last_energy_list = np.zeros(len(self.graphs))
-        self.last_distance_list = np.zeros(len(self.graphs))
-        # self.last_ratio_list = np.zeros(len(self.graphs))
-        self.len_list = [len(graph.y['dotB']) for graph in self.graphs]
-        self.ids = list(range(len(self.graphs)))
-        edge_index_list = [graph.edge_index for graph in self.graphs]
-
-        seq_list = [graph.y['seq_base'] for graph in self.graphs]
-        dotB_list = [graph.y['dotB'] for graph in self.graphs]
-        self.aim_edge_h_list = list(self.pool.map(get_edge_h, dotB_list))
-        # self.aim_edge_h_list = get_edge_h(dotB_list[0])
-
-        # max_size = self.graphs[0].x.shape[0]
-        # init_work = partial(random_init_sequence, max_size=max_size)
-        # init_result = self.pool.map(init_work, dotB_list)
-        #
-        # init_result = list(init_result)
-        # init_result = list(zip(*init_result))
-
-        max_size = self.graphs[0].x.shape[0]
-        init_work = partial(random_init_sequence_pair_4, max_size=max_size)
-        init_result = self.pool.map(init_work, dotB_list, edge_index_list)
-
-        init_result = list(init_result)
-        init_result = list(zip(*init_result))
-
-        for i in range(len(self.graphs)):
-            self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]
-
-        self.last_energy_list = self.pool.map(get_energy_graph, self.graphs)
-        self.last_energy_list = np.array(list(self.last_energy_list))
-        self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
-        self.last_distance_list = np.array(list(self.last_distance_list))
-        self.forbidden_actions_list = list(self.pool.map(forbidden_actions_pair_4, self.graphs))
-        # self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
-
-        return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
-
-    def step_4(self, actions, ep, reward_type='ratio', done_type='ratio'):
-        """
-        环境接受并执行动作
-        :param actions: 动作编号
-        :param reward_type: reward
-        :return:
-        """
-        # result = pool.map(rna_act_pair, actions, self.graphs, self.forbidden_actions_list)
-        # args = zip(actions.cpu(), self.graphs, self.forbidden_actions_list)
-        result = self.pool.map(rna_act_pair_4, actions.cpu(), self.graphs, self.forbidden_actions_list)
-
-        results = list(result)
-        results = list(zip(*results))
-        self.graphs = list(results[0])
-        self.forbidden_actions_list = list(results[1])
-
-        if ep % self.cal_freq == 0:
-            energy_list = self.pool.map(get_energy_graph, self.graphs)
-            energy_list = np.array(list(energy_list))
-            distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
-            # distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
-            distance_list = np.array(list(distance_list))
-        else:
-            energy_list = self.last_energy_list
-            distance_list = self.last_distance_list
-            # ratio_list = self.last_ratio_list
-
-        # 根据reward_type计算reward
-        if reward_type is 'ratio':
-            pass
-            # reward_list = ratio_list #- self.last_ratio_list
-        elif reward_type is 'energy':
-            reward_list = self.last_energy_list - energy_list
-        elif reward_type is 'distance':
-            reward_list = self.last_distance_list - distance_list
-            # reward_list = [(1 - distance / length) for distance, length in zip(distance_list, self.len_list)]
-            # reward_list = 1 - distance_list
-        # 根据done_type判断是否完成
-        is_terminal = 0
-        # if done_type is 'ratio':
-        #     if np.all(np.array(ratio_list) == 1.):
-        #         is_terminal = 1
-        #     done_list = np.where(np.array(ratio_list) == 1., 10, 1)
-        if done_type is 'distance':
-            if np.all(np.array(distance_list) == 0):
-                is_terminal = 1
-            done_list = np.where(np.array(distance_list) == 0, 10, 1)
-        reward_list = np.array(reward_list) * done_list
-
-        # 更新环境信息
-        self.last_energy_list = energy_list
-        self.last_distance_list = distance_list
-        # self.last_ratio_list = ratio_list
-
-        return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list(), reward_list, is_terminal, done_list, self.ids.copy()
 
 
 
