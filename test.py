@@ -1,35 +1,24 @@
-import os
-
-import Levenshtein
 import RNA
-import numpy as np
-import random
-from random import shuffle, sample
 
+sequence = "GGGGAAAACCCC"
 
-import torch
+# Set global switch for unique ML decomposition
+RNA.cvar.uniq_ML = 1
 
-from utils.rna_lib import edge_distance, get_edge_h
+subopt_data = { 'counter' : 1, 'sequence' : sequence }
 
-root = os.path.dirname(os.path.realpath(__file__))
+# Print a subopt result as FASTA record
+def print_subopt_result(structure, energy, data):
+    if not structure == None:
+        print(">subopt %d" % data['counter'])
+        print("%s" % data['sequence'])
+        print("%s [%6.2f]" % (structure, energy))
+        # increase structure counter
+        data['counter'] = data['counter'] + 1
 
-data_dir = root + '/data/processed/rfam_learn/train/all.pt'
-dataset = torch.load(data_dir)
-dataset = sample(dataset, 10)
+# Create a 'fold_compound' for our sequence
+a = RNA.fold_compound(sequence)
 
-print(1)
-
-# real_edge = get_edge_h('.........\n')
-#
-# aim_edge = get_edge_h('.........')
-#
-# distance = edge_distance(real_edge, aim_edge)
-#
-# distance = Levenshtein.distance('.........\n', '.........')
-#
-# print(distance)
-
-loop_index = RNA.make_loop_index('.....((((((((...((((((((((..((((..........))))..((((..........))))..((((..........))))..))))))))))...((((((((((..((((..........))))..((((..........))))..((((..........))))..))))))))))...((((((((((..((((..........))))..((((..........))))..((((..........))))..))))))))))...)))))))).....')
-
-print(loop_index)
-
+# Enumerate all structures 500 dacal/mol = 5 kcal/mol arround
+# the MFE and print each structure using the function above
+a.subopt_cb(500, print_subopt_result, subopt_data);
