@@ -18,7 +18,6 @@ import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
 from torch.distributions import Categorical
 
-
 Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
 
 
