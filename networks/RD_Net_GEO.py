@@ -46,7 +46,8 @@ class BackboneNet(nn.Module):
 
     def forward(self, x, edge_index, edge_weight=None):
         for layer in self.layers_gat:
-            x = layer(x, edge_index, edge_weight=edge_weight)
+            # x = layer(x, edge_index, edge_weight=edge_weight)
+            x = layer(x, edge_index)
             x = F.relu(x)
         return x
 
@@ -82,7 +83,8 @@ class ActorNet(nn.Module):
 
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
-            x = layer(x, edge_index, edge_weight)
+            # x = layer(x, edge_index, edge_weight)
+            x = layer(x, edge_index)
             x = F.relu(x)
 
         x = F.relu(self.fc1(x))
@@ -128,7 +130,8 @@ class CriticNet(nn.Module):
 
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
-            x = layer(x, edge_index, edge_weight)
+            # x = layer(x, edge_index, edge_weight)
+            x = layer(x, edge_index)
             x = F.relu(x)
 
         x = F.relu(self.fc1(x))
