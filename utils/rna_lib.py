@@ -1,3 +1,5 @@
+import math
+
 import RNA
 import random
 import matplotlib.pyplot as plt
@@ -649,9 +651,9 @@ def get_edge_h(dotB):
     u = []
     v = []
 
-    for i in range(l - 1):
-        u += [i]
-        v += [i + 1]
+    # for i in range(l - 1):
+    #     u += [i]
+    #     v += [i + 1]
 
     stack = Stack()
     for i in range(l):
@@ -666,7 +668,7 @@ def get_edge_h(dotB):
     return edge_index
 
 
-def edge_distance(edge_real, edge_aim, normlize=False):
+def edge_distance(edge_real, edge_aim):
     """
     拓扑结构距离
     :param edge_real:
@@ -676,9 +678,11 @@ def edge_distance(edge_real, edge_aim, normlize=False):
     """
     padding = torch.tensor([0, 0]).view(1,-1).float()
     real_h = edge_real.t().float()
-    real_h = torch.cat([padding, real_h], dim=0)
+    if real_h.shape()[1] == 0:
+        real_h = torch.cat([padding, real_h], dim=0)
     aim_h = edge_aim.t().float()
-    aim_h = torch.cat([padding, aim_h], dim=0)
+    if aim_h.shape()[1] == 0:
+        aim_h = torch.cat([padding, aim_h], dim=0)
     distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
     distance_r_a = torch.min(distance_matrix, 1)[0]
     distance_a_r = torch.min(distance_matrix, 0)[0]
@@ -688,6 +692,35 @@ def edge_distance(edge_real, edge_aim, normlize=False):
     # distance_a_r = torch.sum(distance_a_r)
     # distance = distance_r_a.item() + distance_a_r.item()
     return distance
+
+
+def edge_distance_norm(edge_real, edge_aim, l_real, l_aim):
+    real_h = edge_real.t().float()
+    aim_h = edge_aim.t().float()
+
+    n_real = real_h.shape()[1]
+    n_aim = aim_h.shape()[1]
+
+    padding = torch.tensor([0, 0]).view(1, -1).float()
+
+    if n_real == 0:
+        real_h = torch.cat([padding, real_h], dim=0)
+
+    if n_aim == 0:
+        aim_h = torch.cat([padding, aim_h], dim=0)
+
+    norm_base = math.sqrt(
+        n_real * ((l_aim//2)**2 + (l_aim//2-1)**2) + n_aim * ((l_real//2)**2 + (l_real//2-1)**2)
+    )
+
+    distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
+    distance_r_a = torch.min(distance_matrix, 1)[0]
+    distance_a_r = torch.min(distance_matrix, 0)[0]
+    distance_tensor = torch.cat([distance_a_r, distance_r_a], dim=0)
+    distance = torch.norm(distance_tensor)
+    distance = distance / norm_base
+    return distance
+
 
 def get_topology_distance(graph, aim_edge_h):
     """
@@ -699,6 +732,17 @@ def get_topology_distance(graph, aim_edge_h):
     real_dotB = RNA.fold(graph.y['seq_base'])[0]
     real_edge_h = get_edge_h(real_dotB)
     distance = edge_distance(real_edge_h, aim_edge_h)
+    return distance
+
+def get_topology_distance_norm(graph, aim_edge_h):
+    """
+    获取标准化拓扑距离
+    """
+    real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    real_edge_h = get_edge_h(real_dotB)
+    l_real = len(real_dotB)
+    l_aim = len(graph.y['dotB'])
+    distance = edge_distance_norm(real_edge_h, aim_edge_h, l_real, l_aim)
     return distance
 
 
