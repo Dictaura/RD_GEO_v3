@@ -341,9 +341,9 @@ def main():
         if time_step % update_timestep == 0:
             loss_a, loss_c = agent.trainStep(i_episode, max_size)
             loss_a = abs(loss_a)
-            schedualer_b.step(i_episode)
-            schedualer_c.step(i_episode)
-            schedualer_a.step(i_episode)
+            schedualer_b.step()
+            schedualer_c.step()
+            schedualer_a.step()
 
             # 记录到tensorboard
             # loss
