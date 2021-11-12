@@ -146,24 +146,25 @@ class RNA_Graphs_Env(gym.Env):
         results = list(zip(*results))
         self.graphs = list(results[0])
         self.forbidden_actions_list = list(results[1])
+        # if ep % self.cal_freq == 0:
+        energy_list = self.pool.map(get_energy_from_graph, self.graphs)
+        energy_list = np.array(list(energy_list))
 
-        if ep % self.cal_freq == 0:
-            energy_list = self.pool.map(get_energy_from_graph, self.graphs)
-            energy_list = np.array(list(energy_list))
+        if self.distance_type == 'hamming':
+            distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+        elif self.distance_type == 'hamming_norm':
+            distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+        elif self.distance_type == 'topo':
+            distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        elif self.distance_type == 'topo_norm':
+            distance_list = self.pool.map(get_topology_distance_norm, self.graphs, self.aim_edge_h_list)
 
-            if self.distance_type == 'hamming':
-                distance_list = self.pool.map(get_distance_from_graph, self.graphs)
-            elif self.distance_type == 'hamming_norm':
-                distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
-            elif self.distance_type == 'topo':
-                distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
-
-            distance_list = np.array(list(distance_list))
+        distance_list = np.array(list(distance_list))
             # ratio_list = np.array(list(map(get_pair_ratio, self.graphs)))
 
-        else:
-            energy_list = self.last_energy_list
-            distance_list = self.last_distance_list
+        # else:
+        #     energy_list = self.last_energy_list
+        #     distance_list = self.last_distance_list
             # ratio_list = self.last_ratio_list
 
         # 根据reward_type计算reward
