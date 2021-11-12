@@ -7,7 +7,7 @@ import torch_geometric.data
 from tqdm import tqdm
 from utils.rna_lib import get_distance_from_graph, get_energy_from_graph, forbidden_actions_pair
 from collections import namedtuple
-from utils.config_ppo import device, num_change
+from utils.config_ppo import device
 from networks.RD_Net_GEO import BackboneNet, ActorNet, CriticNet
 from torch.autograd import Variable
 from torch import no_grad, clamp
@@ -17,6 +17,7 @@ from itertools import chain
 import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
 from torch.distributions import Categorical
+from functools import partial
 
 Transition = namedtuple('Transition', ['state', 'action', 'a_log_prob', 'reward', 'next_state', 'done'])
 
@@ -31,7 +32,7 @@ def get_element_index(ob_list, index):
     return [ob_list[i] for i in index]
 
 
-def get_action_sample_forbid(pro_list_, length, forbidden_actions):
+def get_action_sample_forbid(pro_list_, length, forbidden_actions, num_change):
     """
     sample with probability
     :param pro_list:
@@ -50,7 +51,7 @@ def get_action_sample_forbid(pro_list_, length, forbidden_actions):
     return action
 
 
-def get_action_max_forbid(pro_list_, length, forbidden_actions):
+def get_action_max_forbid(pro_list_, length, forbidden_actions, num_change):
     """
     choose the action with the largest probability
     :param pro_list:
@@ -69,7 +70,7 @@ class PPO_Log(nn.Module):
                  backboneParam=None, criticParam=None, actorParam=None,
                  lr_backbone=0.001, lr_critic=0.001, lr_actor=0.001,
                  K_epoch=5, train_batch_size=100, actor_freeze_ep=10, eps_clips=0.2, gamma=0.9, num_graph=100, max_grad_norm=1,
-                 pool=None):
+                 pool=None, action_space=4):
         """
         PPO类初始函数
         :param backboneParam: backbone网络参数，被封装为ArgumentParser
@@ -139,6 +140,7 @@ class PPO_Log(nn.Module):
         #     del self.buffer[j][:]
         self.loss_a_list = []
         self.loss_c_list = []
+        self.action_space = action_space
 
     def forward(self, data_batch, max_size, actions):
         data_batch_ = data_batch.clone().to(device)
@@ -183,12 +185,15 @@ class PPO_Log(nn.Module):
 
         # 产生动作batch
         if type_ == 'selectAction':
-            actions = self.pool.map(get_action_sample_forbid, action_prob_list, len_list, forbidden_actions_list)
+            action_work = partial(get_action_sample_forbid, num_change=self.action_space)
+            actions = self.pool.map(action_work, action_prob_list, len_list, forbidden_actions_list)
             actions = torch.tensor(list(actions), dtype=torch.long).view(-1,)
             dist = Categorical(action_prob)
             action_log_probs = dist.log_prob(actions)
         else:
-            actions = self.pool.map(get_action_max_forbid, action_prob_list, len_list, forbidden_actions_list)
+            action_work = partial(get_action_max_forbid, num_change=self.action_space)
+            actions = self.pool.map(action_work, action_prob_list, len_list, forbidden_actions_list)
+            # actions = self.pool.map(get_action_max_forbid, action_prob_list, len_list, forbidden_actions_list)
             actions = torch.tensor(list(actions), dtype=torch.long).view(-1, )
             dist = Categorical(action_prob)
             action_log_probs = dist.log_prob(actions)
