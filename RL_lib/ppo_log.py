@@ -114,13 +114,13 @@ class PPO_Log(nn.Module):
         self.lr_c = lr_critic
         self.lr_a = lr_actor
         # self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
-        self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())), lr=self.lr_c)
-        self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
-        # self.optimizer = torch.optim.Adam([
-        #     {'params': self.backbone.parameters()}
-        # ]
-        #     filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())),
-        #     lr=self.lr_c)
+        # self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())), lr=self.lr_c)
+        # self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
+        self.optimizer = torch.optim.Adam([
+            {'params': self.backbone.parameters(), 'lr': self.lr_b},
+            {'params': self.actor.parameters(), 'lr': self.lr_a},
+            {'params': self.critic.parameters(), 'lr': self.lr_c}
+        ])
         # 设置网络参数是否训练
         for param in self.backbone.parameters():
             param.requires_grad = True
@@ -259,9 +259,15 @@ class PPO_Log(nn.Module):
         actions = torch.tensor(actions).view(-1,).to(device)
         old_action_log_prob = torch.tensor(old_action_log_prob, dtype=torch.float).view(-1,).to(device)
 
+        loss_a_all = 0
+        loss_c_all = 0
+
         for i in range(1, self.K_epoch + 1):
             loss_a = 0
             loss_c = 0
+            loss_a_log = 0
+            loss_c_log = 0
+            n_log = 0
             # 打乱顺序，进行训练
             # with tqdm(total=math.ceil(len(graphs)/self.batch_size), desc=f'Train: Epoch {i}/{self.K_epoch}') as pbar:
             for index in BatchSampler(SubsetRandomSampler(range(len(graphs))), batchSize, False):
@@ -288,9 +294,15 @@ class PPO_Log(nn.Module):
                 loss_c = F.mse_loss(Gt_index.view(-1,), V.view(-1,))
                 loss_all = loss_a + 0.5 * loss_c - 0.01 * dist_entropy.mean()
 
+                l = len(index)
+                n_log += l
+                loss_a_log += loss_a.item() * l
+                loss_c_log += loss_c.item() * l
+
                 # self.optimizer_b.zero_grad()
-                self.optimizer_a.zero_grad()
-                self.optimizer_c.zero_grad()
+                # self.optimizer_a.zero_grad()
+                # self.optimizer_c.zero_grad()
+                self.optimizer.zero_grad()
 
                 loss_all.backward()
                 nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
@@ -298,18 +310,24 @@ class PPO_Log(nn.Module):
                 nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
 
                 # self.optimizer_b.step()
-                if self.actor_freeze_ep < ep:
-                    self.optimizer_a.step()
-                self.optimizer_c.step()
+                # if self.actor_freeze_ep < ep:
+                #     self.optimizer_a.step()
+                # self.optimizer_c.step()
+                self.optimizer.step()
                     # tqdm更新显示
                     # pbar.set_postfix({'LC': loss_c.item(), 'LA': loss_a.item()})
                     # pbar.update(1)
-            print("Loss_A: {}, Loss_c: {}".format(loss_a.item(), loss_c.item()))
+            loss_a_log = loss_a_log / n_log
+            loss_c_log = loss_c_log / n_log
+            print("Loss_A: {}, Loss_c: {}".format(loss_a_log, loss_c_log))
+
+            loss_a_all += loss_a_log
+            loss_c_all += loss_c_log
 
         self.loss_a_list.append(loss_a.item())
         self.loss_c_list.append(loss_c.item())
 
-        return loss_a, loss_c
+        return loss_a_log, loss_c_log
 
 
     def clean_buffer(self):

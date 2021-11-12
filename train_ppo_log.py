@@ -154,12 +154,13 @@ def main():
     gamma = 0.9
 
     # 学习率
-    # lr_backbone = 0.000001
+    lr_backbone = 0.000001
     lr_actor = 0.0000001  # learning rate for actor network
     lr_critic = 0.0000001  # learning rate for critic network
 
     agent = PPO_Log(BackboneNet, ActorNet, CriticNet,
-        backboneParam, criticParam, actorParam, lr_critic, lr_actor, train_batch_size=batch_size,
+        backboneParam, criticParam, actorParam,
+                    lr_backbone=lr_backbone, lr_critic=lr_critic, lr_actor=lr_actor, train_batch_size=batch_size,
                 K_epoch=K_epochs, eps_clips=eps_clip, actor_freeze_ep=actor_freeze_ep, num_graph=len(env.len_list), gamma=gamma,
                 pool=pool_agent, action_space=action_space).to(device)
 
@@ -167,7 +168,7 @@ def main():
     # agent.load(root + '/logs/PPO_logs_2021_10_21_21_22_01/Model/', 200)
 
     # 学习率更新策略
-    # schedualer_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
+    schedualer_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
     schedualer_c = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_c, lr_decay)
     schedualer_a = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_a, lr_decay)
 
@@ -340,7 +341,7 @@ def main():
         if time_step % update_timestep == 0:
             loss_a, loss_c = agent.trainStep(i_episode, max_size)
             loss_a = abs(loss_a)
-            # schedualer_b.step(i_episode)
+            schedualer_b.step(i_episode)
             schedualer_c.step(i_episode)
             schedualer_a.step(i_episode)
 
