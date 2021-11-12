@@ -676,12 +676,15 @@ def edge_distance(edge_real, edge_aim):
     :param normlize:
     :return:
     """
-    padding = torch.tensor([0, 0]).view(1,-1).float()
     real_h = edge_real.t().float()
-    if real_h.shape()[1] == 0:
-        real_h = torch.cat([padding, real_h], dim=0)
     aim_h = edge_aim.t().float()
-    if aim_h.shape()[1] == 0:
+
+    padding = torch.tensor([0, 0]).view(1,-1).float()
+
+    if real_h.size(0) == 0:
+        real_h = torch.cat([padding, real_h], dim=0)
+
+    if aim_h.size(0) == 0:
         aim_h = torch.cat([padding, aim_h], dim=0)
     distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
     distance_r_a = torch.min(distance_matrix, 1)[0]
@@ -698,8 +701,8 @@ def edge_distance_norm(edge_real, edge_aim, l_real, l_aim):
     real_h = edge_real.t().float()
     aim_h = edge_aim.t().float()
 
-    n_real = real_h.shape()[1]
-    n_aim = aim_h.shape()[1]
+    n_real = real_h.size(0)
+    n_aim = aim_h.size(0)
 
     padding = torch.tensor([0, 0]).view(1, -1).float()
 

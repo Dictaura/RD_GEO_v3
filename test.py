@@ -1,24 +1,13 @@
 import RNA
+from utils.rna_lib import get_distance_from_graph, edge_distance_norm, get_edge_h
 
-sequence = "GGGGAAAACCCC"
+dotB1 = '(((((((....(((...........)))((((((((..(((((((((((((((((((...(((((......))))).)))))).)))))))))))))..))))))))..)))))))'
+dotB2 = '((((((.((((....))))))).)))..........'
 
-# Set global switch for unique ML decomposition
-RNA.cvar.uniq_ML = 1
+edge1_h = get_edge_h(dotB1)
+edge2_h = get_edge_h(dotB2)
 
-subopt_data = { 'counter' : 1, 'sequence' : sequence }
+l1 = len(dotB1)
+l2 = len(dotB2)
 
-# Print a subopt result as FASTA record
-def print_subopt_result(structure, energy, data):
-    if not structure == None:
-        print(">subopt %d" % data['counter'])
-        print("%s" % data['sequence'])
-        print("%s [%6.2f]" % (structure, energy))
-        # increase structure counter
-        data['counter'] = data['counter'] + 1
-
-# Create a 'fold_compound' for our sequence
-a = RNA.fold_compound(sequence)
-
-# Enumerate all structures 500 dacal/mol = 5 kcal/mol arround
-# the MFE and print each structure using the function above
-a.subopt_cb(500, print_subopt_result, subopt_data);
+distance = edge_distance_norm(edge1_h, edge2_h, l1, l2)
