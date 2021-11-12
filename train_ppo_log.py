@@ -121,7 +121,7 @@ def main():
     reward_type = 'distance'
     done_type = 'distance'
     distance_type = 'topo_norm'
-    init = 'unpair'
+    init = 'pair'
     action_space = num_change
 
     env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env,
