@@ -111,6 +111,7 @@ class RNA_Graphs_Env(gym.Env):
         self.last_distance_list = np.array(list(self.last_distance_list))
 
         forbid_work = partial(forbidden_actions_pair, action_space=self.action_space)
+        # test_list = forbid_work(self.graphs[0])
         self.forbidden_actions_list = list(self.pool.map(forbid_work, self.graphs))
 
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()

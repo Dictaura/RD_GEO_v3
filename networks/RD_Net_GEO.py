@@ -73,7 +73,7 @@ class ActorNet(nn.Module):
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-        self.fc1 = nn.Linear(self.hide_size_list[-1], self.hide_size_fc, bias=False)
+        self.fc1 = nn.Linear(self.size_layer_list[-1], self.hide_size_fc, bias=False)
         self.norm1 = nn.BatchNorm1d(self.hide_size_fc)
         self.fc2 = nn.Linear(self.hide_size_fc, self.out_size, bias=False)
         self.norm2 = nn.BatchNorm1d(self.out_size)
@@ -118,7 +118,7 @@ class CriticNet(nn.Module):
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-        self.fc1 = nn.Linear(self.hide_size_list[-1], self.hide_size_fc, bias=False)
+        self.fc1 = nn.Linear(self.size_layer_list[-1], self.hide_size_fc, bias=False)
         self.norm1 = nn.BatchNorm1d(self.hide_size_fc)
         self.fc2 = nn.Linear(self.hide_size_fc, self.out_size, bias=False)
         self.norm2 = nn.BatchNorm1d(self.out_size)

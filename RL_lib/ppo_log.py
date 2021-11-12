@@ -113,14 +113,14 @@ class PPO_Log(nn.Module):
         self.lr_b = lr_backbone
         self.lr_c = lr_critic
         self.lr_a = lr_actor
-        # self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
-        # self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, chain(self.backbone.parameters(), self.critic.parameters())), lr=self.lr_c)
-        # self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
-        self.optimizer = torch.optim.Adam([
-            {'params': self.backbone.parameters(), 'lr': self.lr_b},
-            {'params': self.actor.parameters(), 'lr': self.lr_a},
-            {'params': self.critic.parameters(), 'lr': self.lr_c}
-        ])
+        self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
+        self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, self.critic.parameters()), lr=self.lr_c)
+        self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
+        # self.optimizer = torch.optim.Adam([
+        #     {'params': self.backbone.parameters(), 'lr': self.lr_b},
+        #     {'params': self.actor.parameters(), 'lr': self.lr_a},
+        #     {'params': self.critic.parameters(), 'lr': self.lr_c}
+        # ])
         # 设置网络参数是否训练
         for param in self.backbone.parameters():
             param.requires_grad = True
@@ -299,10 +299,10 @@ class PPO_Log(nn.Module):
                 loss_a_log += loss_a.item() * l
                 loss_c_log += loss_c.item() * l
 
-                # self.optimizer_b.zero_grad()
-                # self.optimizer_a.zero_grad()
-                # self.optimizer_c.zero_grad()
-                self.optimizer.zero_grad()
+                self.optimizer_b.zero_grad()
+                self.optimizer_a.zero_grad()
+                self.optimizer_c.zero_grad()
+                # self.optimizer.zero_grad()
 
                 loss_all.backward()
                 nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
@@ -312,8 +312,10 @@ class PPO_Log(nn.Module):
                 # self.optimizer_b.step()
                 # if self.actor_freeze_ep < ep:
                 #     self.optimizer_a.step()
-                # self.optimizer_c.step()
-                self.optimizer.step()
+                self.optimizer_b.step()
+                self.optimizer_a.step()
+                self.optimizer_c.step()
+                # self.optimizer.step()
                     # tqdm更新显示
                     # pbar.set_postfix({'LC': loss_c.item(), 'LA': loss_a.item()})
                     # pbar.update(1)
