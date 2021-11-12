@@ -120,7 +120,7 @@ def main():
     # reward结算模式和done判定模式
     reward_type = 'distance'
     done_type = 'distance'
-    distance_type = 'hamming'
+    distance_type = 'topo'
     init = 'unpair'
     action_space = num_change
 
