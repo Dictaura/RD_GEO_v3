@@ -241,7 +241,8 @@ def get_distance_from_onehot(seq_onehot ,dotB_Aim):
     """
     seq_base = seq_onehot2Base(seq_onehot)
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    # distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim)
     return distance
 
 
@@ -253,7 +254,8 @@ def get_distance_from_base(seq_base ,dotB_Aim):
     :return: 距离
     """
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    # distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim)
     return distance
 
 
@@ -265,7 +267,8 @@ def get_distance_from_base_norm(seq_base ,dotB_Aim):
     :return: 距离
     """
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
+    #distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
     return distance
 
 
@@ -279,7 +282,8 @@ def get_distance_from_graph(graph):
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
     dotB_real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_real, dotB_aim)
+    # distance = Levenshtein.distance(dotB_real, dotB_aim)
+    distance = RNA.hamming_distance(dotB_real, dotB_aim)
     return distance
 
 
@@ -293,7 +297,8 @@ def get_distance_from_graph_norm(graph):
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
     dotB_real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_real, dotB_aim) / len(dotB_aim)
+    # distance = Levenshtein.distance(dotB_real, dotB_aim) / len(dotB_aim)
+    distance = RNA.hamming_distance(dotB_real, dotB_aim) / len(dotB_aim)
     return distance
 
 
@@ -643,6 +648,11 @@ def get_edge_h(dotB):
     l = len(str_list)
     u = []
     v = []
+
+    for i in range(l - 1):
+        u += [i]
+        v += [i + 1]
+
     stack = Stack()
     for i in range(l):
         if (str_list[i] == '('):
