@@ -35,10 +35,11 @@ class BackboneNet(nn.Module):
         self.layers_gat = []
 
         for i in range(n_layers):
-            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-                                                   self.size_layer_list[i+1],
-                                                   self.size_layer_list[i+1],
-                                                   self.n_head_list[i]))
+            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+            #                                        self.size_layer_list[i+1],
+            #                                        self.size_layer_list[i+1],
+            #                                        self.n_head_list[i]))
+            self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
@@ -65,10 +66,11 @@ class ActorNet(nn.Module):
         self.layers_gat = []
 
         for i in range(self.n_layers):
-            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-                                                   self.size_layer_list[i + 1],
-                                                   self.size_layer_list[i + 1],
-                                                   self.n_head_list[i]))
+            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+            #                                        self.size_layer_list[i + 1],
+            #                                        self.size_layer_list[i + 1],
+            #                                        self.n_head_list[i]))
+            self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
@@ -110,10 +112,11 @@ class CriticNet(nn.Module):
         self.layers_gat = []
 
         for i in range(self.n_layers):
-            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-                                                   self.size_layer_list[i + 1],
-                                                   self.size_layer_list[i + 1],
-                                                   self.n_head_list[i]))
+            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+            #                                        self.size_layer_list[i + 1],
+            #                                        self.size_layer_list[i + 1],
+            #                                        self.n_head_list[i]))
+            self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
