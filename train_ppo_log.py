@@ -118,9 +118,9 @@ def main():
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
-    reward_type = 'energy'
+    reward_type = 'distance'
     done_type = 'distance'
-    distance_type = 'hamming_norm'
+    distance_type = 'hamming'
     init = 'unpair'
     action_space = num_change
 
