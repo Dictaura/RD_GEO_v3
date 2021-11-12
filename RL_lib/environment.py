@@ -8,7 +8,7 @@ import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
-    get_distance_from_graph
+    get_distance_from_graph, get_topology_distance_norm
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -105,6 +105,8 @@ class RNA_Graphs_Env(gym.Env):
             self.distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         elif self.distance_type == 'topo':
             self.distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        elif self.distance_type == 'topo_norm':
+            self.distance_list = self.pool.map(get_topology_distance_norm, self.graphs, self.aim_edge_h_list)
         # self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
 
