@@ -495,10 +495,10 @@ def rna_act_pair(action_, graph, forbidden_actions, action_space):
     # 获取动作位置和改写的碱基对
     if action_space == 4:
         base_pair_dict = base_pair_dict_4
-        base_pair_list = base_pair_dict_4
+        base_pair_list = base_pair_list_4
     elif action_space == 6:
         base_pair_dict = base_pair_dict_6
-        base_pair_list = base_pair_dict_6
+        base_pair_list = base_pair_list_6
     action = action_.cpu()
     place = action // action_space
     base_pair = base_pair_list[action % action_space]
@@ -575,10 +575,10 @@ def rna_act_pair(action_, graph, forbidden_actions, action_space):
 def forbidden_actions_pair(graph, action_space):
     if action_space == 4:
         base_pair_dict = base_pair_dict_4
-        base_pair_list = base_pair_dict_4
+        base_pair_list = base_pair_list_4
     elif action_space == 6:
         base_pair_dict = base_pair_dict_6
-        base_pair_list = base_pair_dict_6
+        base_pair_list = base_pair_list_6
     # seq_base = seq_onehot2Base(graph.x)
     seq_base = graph.y['seq_base']
     if seq_base != graph.y['seq_base']:
@@ -747,7 +747,3 @@ def get_topology_distance_norm(graph, aim_edge_h):
     l_aim = len(graph.y['dotB'])
     distance = edge_distance_norm(real_edge_h, aim_edge_h, l_real, l_aim)
     return distance
-
-
-
-

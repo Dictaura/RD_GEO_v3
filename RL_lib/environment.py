@@ -182,7 +182,7 @@ class RNA_Graphs_Env(gym.Env):
         #     if np.all(np.array(ratio_list) == 1.):
         #         is_terminal = 1
         #     done_list = np.where(np.array(ratio_list) == 1., 10, 1)
-        if done_type is 'distance':
+        if self.done_type is 'distance':
             if np.all(np.array(distance_list) == 0):
                 is_terminal = 1
             done_list = np.where(np.array(distance_list) == 0, 10, 1)

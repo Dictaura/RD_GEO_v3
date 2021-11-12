@@ -2,17 +2,17 @@ import math
 from RL_lib.environment import RNA_Graphs_Env
 from networks.RD_Net_GEO import BackboneNet, CriticNet, ActorNet
 from torch.autograd import Variable
-from utils.config_ppo import device, backboneParam, criticParam, actorParam
+from utils.config_ppo import device, backboneParam, criticParam, actorParam, num_change
 import os
 import torch
 import torch_geometric
-from RL_lib.ppo import PPO, Transition
+from RL_lib.ppo_log import PPO_Log, Transition
 import time
 from datetime import datetime
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
-from utils.rna_lib import seq_onehot2Base, get_energy_onehot, get_energy_base, \
+from utils.rna_lib import seq_onehot2Base, get_energy_from_onehot, get_energy_from_base, \
     get_distance_from_base, get_topology_distance
 from random import choice, sample
 import multiprocessing as mp
@@ -120,8 +120,13 @@ def main():
     # reward结算模式和done判定模式
     reward_type = 'distance'
     done_type = 'distance'
+    distance_type = 'hamming_norm'
+    init = 'unpair'
+    action_space = num_change
 
-    env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env)
+    env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env,
+                         reward_type=reward_type, done_type=done_type, distance_type=distance_type,
+                         action_space=action_space, init=init)
 
     #####################################################
 
@@ -153,10 +158,10 @@ def main():
     lr_actor = 0.0000001  # learning rate for actor network
     lr_critic = 0.0000001  # learning rate for critic network
 
-    agent = PPO(BackboneNet, ActorNet, CriticNet,
+    agent = PPO_Log(BackboneNet, ActorNet, CriticNet,
         backboneParam, criticParam, actorParam, lr_critic, lr_actor, train_batch_size=batch_size,
                 K_epoch=K_epochs, eps_clips=eps_clip, actor_freeze_ep=actor_freeze_ep, num_graph=len(env.len_list), gamma=gamma,
-                pool=pool_agent).to(device)
+                pool=pool_agent, action_space=action_space).to(device)
 
     # 加载模型
     # agent.load(root + '/logs/PPO_logs_2021_10_21_21_22_01/Model/', 200)
@@ -221,7 +226,7 @@ def main():
         # current_ep_reward_np = torch.tensor(np.zeros(len(env.len_list)), dtype=float)
 
         # 重置环境，获得初始状态
-        state = env.reset_4()
+        state = env.reset()
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
         state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
@@ -237,11 +242,10 @@ def main():
         for t in range(1, max_ep_len+1):
 
             # 智能体产生动作
-            actions, action_log_probs = agent.work_forbid_log(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
+            actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
 
             # 环境执行动作
-            next_state, reward_list, is_termial, done_list, ids = env.step_4(actions, t, reward_type=reward_type,
-                                                                           done_type=done_type)
+            next_state, reward_list, is_termial, done_list, ids = env.step(actions, t)
 
             # 数据放入经验池
             actions = actions.split(1, dim=0)
@@ -304,7 +308,7 @@ def main():
         # final_seqs_base = list(map(seq_onehot2Base, final_seqs_onehot))
         final_seqs_base = [graph.y['seq_base'] for graph in final_graphs]
         final_dotBs = [graph.y['dotB'] for graph in final_graphs]
-        final_energy = pool_main.map(get_energy_base, final_seqs_base, final_dotBs)
+        final_energy = pool_main.map(get_energy_from_base, final_seqs_base, final_dotBs)
         final_energy = list(final_energy)
         final_distance = pool_main.map(get_distance_from_base, final_seqs_base, final_dotBs)
         final_distance_topo = pool_main.map(get_topology_distance, final_graphs, env.aim_edge_h_list)
@@ -334,7 +338,7 @@ def main():
 
         # 更新
         if time_step % update_timestep == 0:
-            loss_a, loss_c = agent.trainStep_log(i_episode, max_size)
+            loss_a, loss_c = agent.trainStep(i_episode, max_size)
             loss_a = abs(loss_a)
             # schedualer_b.step(i_episode)
             schedualer_c.step(i_episode)

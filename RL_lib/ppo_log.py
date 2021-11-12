@@ -273,7 +273,7 @@ class PPO_Log(nn.Module):
                 # x, edge_index = Variable(graphs_index.x.float().to(device)), Variable(graphs_index.edge_index.to(device))
                 # edge_attr = Variable(graphs_index.edge_attr.to(device))
                 # 计算优势
-                action_log_probs, V, dist_entropy = self.forward_log(graphs_index, max_size, actions_index)
+                action_log_probs, V, dist_entropy = self.forward(graphs_index, max_size, actions_index)
                 delta = Gt_index.view(-1,) - V.detach().view(-1,)
                 advantage = delta.view(-1,)
 
