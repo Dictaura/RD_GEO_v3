@@ -379,12 +379,12 @@ def random_init_sequence_pair(dotB, edge_index, max_size, action_space):
         pair_place = edge_index[1][i]
         # if place > pair_place:
         #     continue
-        if np.all(seq_onehot[place] == 0.):
-            base_tmp = seq_base[place]
-            seq_onehot[place] = base2Onehot(base_tmp).numpy()
-            if place < pair_place-1 and np.all(seq_onehot[pair_place] == 0):
-                seq_base[pair_place] = base_pair_dict[base_tmp][dice(len(base_pair_dict[base_tmp]), 0)]
-                seq_onehot[pair_place] = base2Onehot(seq_base[pair_place]).numpy()
+        #if np.all(seq_onehot[place] == 0.):
+        base_tmp = seq_base[place]
+        seq_onehot[place] = base2Onehot(base_tmp).numpy()
+        if place < pair_place-1:
+            seq_base[pair_place] = base_pair_dict[base_tmp][dice(len(base_pair_dict[base_tmp]), 0)]
+            seq_onehot[pair_place] = base2Onehot(seq_base[pair_place]).numpy()
     seq_onehot = torch.tensor(seq_onehot)
     seq_base = ''.join(seq_base)
     return seq_base, seq_onehot
