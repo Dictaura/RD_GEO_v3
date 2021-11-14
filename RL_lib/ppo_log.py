@@ -305,9 +305,9 @@ class PPO_Log(nn.Module):
                 # self.optimizer.zero_grad()
 
                 loss_all.backward()
-                nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
-                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
-                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
+                # nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
+                # nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+                # nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
 
                 # self.optimizer_b.step()
                 # if self.actor_freeze_ep < ep:
