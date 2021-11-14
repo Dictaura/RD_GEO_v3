@@ -118,10 +118,10 @@ def main():
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
-    reward_type = 'energy'
+    reward_type = 'distance'
     done_type = 'distance'
-    distance_type = 'hamming'
-    init = 'unpair'
+    distance_type = 'topo'
+    init = 'pair'
     action_space = num_change
 
     env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env,
@@ -258,6 +258,16 @@ def main():
                                                                          done_list // 10):
                 trans = Transition(graph.to(device), action.item(), prob.item(), reward, next_graph, done)
                 agent.storeTransition(trans, id)
+
+                ## test: show the change in a round ##
+                energy = get_energy_from_base(graph.y['seq_base'], graph.y['dotB'])
+                hamming = get_distance_from_base(graph.y['seq_base'], graph.y['dotB'])
+                topo = get_topology_distance(graph, env.aim_edge_h_list[id])
+
+                writer.add_scalar('energy' + str(id), energy, time_step)
+                writer.add_scalar('hamming' + str(id), hamming, time_step)
+                writer.add_scalar('topo' + str(id), topo, time_step)
+                #####################################
 
             done_index = list(np.nonzero(done_list == 10)[0])
             if len(done_index) > 0:
