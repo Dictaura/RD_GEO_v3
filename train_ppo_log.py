@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 from utils.rna_lib import seq_onehot2Base, get_energy_from_onehot, get_energy_from_base, \
-    get_distance_from_base, get_topology_distance
+    get_distance_from_base, get_topology_distance, get_pair_ratio
 from random import choice, sample
 import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
@@ -81,6 +81,7 @@ def main():
 
     # create tensorboard log as writer
     writer = SummaryWriter(tensor_dir, comment="Train_Log.log")
+    writer.add_text('file', str(local_time))
     print('tensorboard at:' + tensor_dir)
 
     #####################################################
@@ -95,7 +96,7 @@ def main():
     max_size = max(len_list)
 
     # 总步数
-    max_train_timestep = int(20000)
+    max_train_timestep = int(60000)
 
     # 每episode的步数
     max_ep_len = 200
@@ -113,15 +114,15 @@ def main():
     action_type = 'selectAction'
 
     # 选择多步计算频率
-    cal_freq_start = 1
-    cal_freq_end = 1
+    cal_freq_start = 1 # max_ep_len
+    cal_freq_end = 1 # max_ep_len
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
     reward_type = 'distance'
     done_type = 'distance'
-    distance_type = 'topo'
-    init = 'pair'
+    distance_type = 'hamming'
+    init = 'unpair'
     action_space = num_change
 
     env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env,
@@ -179,6 +180,8 @@ def main():
     writer.add_text("loop_step", str(max_ep_len))
     writer.add_text("reward_type", reward_type)
     writer.add_text("done_type", done_type)
+    writer.add_text("init", init)
+    writer.add_text("distance type", distance_type)
     writer.add_text("lr_actor", str(lr_actor))
     writer.add_text("lr_critic", str(lr_critic))
     writer.add_text("batch_size", str(batch_size))
@@ -228,6 +231,7 @@ def main():
 
         # 重置环境，获得初始状态
         state = env.reset()
+        # ratio = get_pair_ratio(env.graphs[0], 4)
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
         state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
@@ -260,13 +264,13 @@ def main():
                 agent.storeTransition(trans, id)
 
                 ## test: show the change in a round ##
-                energy = get_energy_from_base(graph.y['seq_base'], graph.y['dotB'])
-                hamming = get_distance_from_base(graph.y['seq_base'], graph.y['dotB'])
-                topo = get_topology_distance(graph, env.aim_edge_h_list[id])
-
-                writer.add_scalar('energy' + str(id), energy, time_step)
-                writer.add_scalar('hamming' + str(id), hamming, time_step)
-                writer.add_scalar('topo' + str(id), topo, time_step)
+                # energy = get_energy_from_base(graph.y['seq_base'], graph.y['dotB'])
+                # hamming = get_distance_from_base(graph.y['seq_base'], graph.y['dotB'])
+                # topo = get_topology_distance(graph, env.aim_edge_h_list[id])
+                #
+                # writer.add_scalar('energy' + str(id), energy, time_step)
+                # writer.add_scalar('hamming' + str(id), hamming, time_step)
+                # writer.add_scalar('topo' + str(id), topo, time_step)
                 #####################################
 
             done_index = list(np.nonzero(done_list == 10)[0])
