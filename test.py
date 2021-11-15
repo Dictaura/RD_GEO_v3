@@ -1,13 +1,19 @@
 import RNA
-from utils.rna_lib import get_distance_from_graph, edge_distance_norm, get_edge_h
+from utils.rna_lib import get_distance_from_graph, edge_distance_norm, get_edge_h, get_graph, get_pair_ratio, \
+    random_init_sequence_pair
 
-dotB1 = '(((((((....(((...........)))((((((((..(((((((((((((((((((...(((((......))))).)))))).)))))))))))))..))))))))..)))))))'
-dotB2 = '((((((.((((....))))))).)))..........'
+seq = 'UACACAGAAUAGGGUCUUCCCACGCGACCGGGACAGGAACGAAACUAAAAGACCGACAGGUGACGCGGCAGUGGCCGCCCCGAAGCUCUUACCUCAGGACCCUGUUCUAAAGUAGCAACCUGUUUAGACAGGGUGGUCCUGGGGGUCAGCCCACAGAGGAGGUCCUCGGAGGCUGGCCCCAGCUCUAAGGGCCAUUUGAUGGCAGUACCAAUGUGGGUGUCCCCACAUUGUAGUUGCCAUUCACAGGGUGUC'
+dotB = RNA.fold(seq)[0]
 
-edge1_h = get_edge_h(dotB1)
-edge2_h = get_edge_h(dotB2)
+graph = get_graph(seq_base=seq, dotB=dotB)
 
-l1 = len(dotB1)
-l2 = len(dotB2)
+ratio1 = get_pair_ratio(graph, 4)
 
-distance = edge_distance_norm(edge1_h, edge2_h, l1, l2)
+seq, onehot = random_init_sequence_pair(dotB, graph.edge_index, max_size=len(dotB), action_space=4)
+
+graph.x = onehot
+graph.y['seq_base'] = seq
+
+ratio2 = get_pair_ratio(graph, 4)
+
+print(ratio2)
