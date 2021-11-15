@@ -17,10 +17,10 @@ import multiprocessing as mp
 base_color_dict = {'A': 'y', 'U': 'b', 'G': 'r', 'C': 'g'}
 base_list = ['A', 'U', 'C', 'G']
 onehot_list = [np.array([1, 0, 0, 0]), np.array([0, 1, 0, 0]), np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])]
-base_pair_dict_6 = {'A': ['U'], 'U': ['A', 'G'], 'G': ['U', 'C'], 'C': ['G'] }
-base_pair_dict_4 = {'A': ['U'], 'U': ['A'], 'G': ['C'], 'C': ['G']}
+base_pair_dict_6 = {'A': ['U'], 'U': ['A', 'G'], 'C': ['G'], 'G': ['U', 'C']}
+base_pair_dict_4 = {'A': ['U'], 'U': ['A'], 'C': ['G'], 'G': ['C']}
 base_pair_list_6 = [['A', 'U'], ['U', 'A'], ['U', 'G'], ['G', 'U'], ['G', 'C'], ['C', 'G']]
-base_pair_list_4 = [['A', 'U'], ['U', 'A'], ['G', 'C'], ['C', 'G']]
+base_pair_list_4 = [['A', 'U'], ['U', 'A'], ['C', 'G'], ['G', 'C']]
 
 #############################################################
 # 数据结构和工具
