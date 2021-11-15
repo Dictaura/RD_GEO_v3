@@ -100,13 +100,13 @@ class RNA_Graphs_Env(gym.Env):
         self.last_energy_list = np.array(list(self.last_energy_list))
 
         if self.distance_type == 'hamming':
-            self.distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+            self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
         elif self.distance_type == 'hamming_norm':
-            self.distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+            self.last_energy_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         elif self.distance_type == 'topo':
-            self.distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+            self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
         elif self.distance_type == 'topo_norm':
-            self.distance_list = self.pool.map(get_topology_distance_norm, self.graphs, self.aim_edge_h_list)
+            self.last_distance_list = self.pool.map(get_topology_distance_norm, self.graphs, self.aim_edge_h_list)
         # self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
 
