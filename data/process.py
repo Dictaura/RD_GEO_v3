@@ -47,7 +47,7 @@ def generate_rfam_all(data_dir, save_dir, maxsize=None):
             graph_list.append(graph)
             pbar.update(1)
 
-    torch.save(graph_list, save_dir)
+    torch.save(graph_list, save_dir, _use_new_zipfile_serialization=False)
 
     print("Generation Finished!")
 
