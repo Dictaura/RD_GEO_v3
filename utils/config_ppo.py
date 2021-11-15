@@ -13,10 +13,10 @@ num_change = 4
 # backbone的参数
 backboneParam_dict = {
     'in_size': 4,
-    'out_size': 16,
-    'hide_size_list': [8, 12],
-    'n_head_list': [1, 1, 1],
-    'n_layers': 3,
+    'out_size': 64,
+    'hide_size_list': [8, 12, 16, 32],
+    'n_head_list': [2, 2, 2, 2, 2],
+    'n_layers': 5,
     'dropout': 0.,
     'alpha': 0.5,
     'concat': True
@@ -29,12 +29,12 @@ backboneParam = parser.parse_args()
 
 # critic的参数
 criticParam_dict = {
-    'in_size': 16,
+    'in_size': 64,
     'out_size': 1,
-    'hide_size_list': [],
+    'hide_size_list': [32, 16, 8],
     'hide_size_fc': 8,
-    'n_head_list': [],
-    'n_layers': 0,
+    'n_head_list': [2, 2, 2],
+    'n_layers': 3,
     'graph_size': 200,
     'dropout': 0.,
     'alpha': 0.5,
@@ -48,12 +48,12 @@ criticParam = parser.parse_args()
 
 # actor的参数
 actorParam_dict = {
-    'in_size': 16,
+    'in_size': 64,
     'out_size': 4,
-    'hide_size_list': [],
+    'hide_size_list': [32, 16, 8],
     'hide_size_fc': 8,
-    'n_head_list': [],
-    'n_layers': 0,
+    'n_head_list': [2, 2, 2],
+    'n_layers': 3,
     'dropout': 0.,
     'alpha': 0.5,
     'concat': True

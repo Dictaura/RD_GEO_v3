@@ -35,12 +35,10 @@ class BackboneNet(nn.Module):
         self.layers_gat = []
 
         for i in range(n_layers):
-            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-            #                                        self.size_layer_list[i+1],
-            #                                        self.size_layer_list[i+1],
-            #                                        self.n_head_list[i]))
-            # self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
-            self.layers_gat.append(conv_g.GCNConv(self.size_layer_list[i], self.size_layer_list[i + 1], bias=False))
+            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+                                                   self.size_layer_list[i+1],
+                                                   self.size_layer_list[i+1],
+                                                   self.n_head_list[i]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
@@ -48,7 +46,6 @@ class BackboneNet(nn.Module):
     def forward(self, x, edge_index, edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight=edge_weight)
-            # x = layer(x, edge_index)
             x = F.relu(x)
         return x
 
@@ -68,31 +65,24 @@ class ActorNet(nn.Module):
         self.layers_gat = []
 
         for i in range(self.n_layers):
-            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-            #                                        self.size_layer_list[i + 1],
-            #                                        self.size_layer_list[i + 1],
-            #                                        self.n_head_list[i]))
-            # self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
-            self.layers_gat.append(conv_g.GCNConv(self.size_layer_list[i], self.size_layer_list[i + 1], bias=False))
+            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+                                                   self.size_layer_list[i + 1],
+                                                   self.size_layer_list[i + 1],
+                                                   self.n_head_list[i]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-        self.fc1 = nn.Linear(self.size_layer_list[-1], self.hide_size_fc, bias=False)
-        # self.norm1 = nn.BatchNorm1d(self.hide_size_fc)
+        self.fc1 = nn.Linear(self.hide_size_list[-1], self.hide_size_fc, bias=False)
         self.fc2 = nn.Linear(self.hide_size_fc, self.out_size, bias=False)
-        # self.norm2 = nn.BatchNorm1d(self.out_size)
 
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight)
-            # x = layer(x, edge_index)
             x = F.relu(x)
 
         x = F.relu(self.fc1(x))
-        # x = self.norm1(x)
         x = F.relu(self.fc2(x))
-        # x = self.norm2(x)
 
         x = x.view(x.size(0)//max_size, max_size, -1)
         x = torch.flatten(x, 1, 2)
@@ -116,31 +106,24 @@ class CriticNet(nn.Module):
         self.layers_gat = []
 
         for i in range(self.n_layers):
-            # self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
-            #                                        self.size_layer_list[i + 1],
-            #                                        self.size_layer_list[i + 1],
-            #                                        self.n_head_list[i]))
-            # self.layers_gat.append(conv_g.GATConv(self.size_layer_list[i], self.size_layer_list[i + 1]))
-            self.layers_gat.append(conv_g.GCNConv(self.size_layer_list[i], self.size_layer_list[i + 1], bias=False))
+            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+                                                   self.size_layer_list[i + 1],
+                                                   self.size_layer_list[i + 1],
+                                                   self.n_head_list[i]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-        self.fc1 = nn.Linear(self.size_layer_list[-1], self.hide_size_fc, bias=False)
-        # self.norm1 = nn.BatchNorm1d(self.hide_size_fc)
+        self.fc1 = nn.Linear(self.hide_size_list[-1], self.hide_size_fc, bias=False)
         self.fc2 = nn.Linear(self.hide_size_fc, self.out_size, bias=False)
-        # self.norm2 = nn.BatchNorm1d(self.out_size)
 
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight)
-            # x = layer(x, edge_index)
             x = F.relu(x)
 
         x = F.relu(self.fc1(x))
-        # x = self.norm1(x)
         x = F.relu(self.fc2(x))
-        # x = self.norm2(x)
 
         x = x.view(x.size(0)//max_size, max_size, -1)
         value = torch.sum(x, dim=1)
