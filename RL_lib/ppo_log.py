@@ -113,9 +113,12 @@ class PPO_Log(nn.Module):
         self.lr_b = lr_backbone
         self.lr_c = lr_critic
         self.lr_a = lr_actor
-        self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
-        self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, self.critic.parameters()), lr=self.lr_c)
-        self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
+        # self.optimizer_b = torch.optim.Adam(filter(lambda p: p.requires_grad, self.backbone.parameters()), lr=self.lr_b)
+        # self.optimizer_c = torch.optim.Adam(filter(lambda p: p.requires_grad, self.critic.parameters()), lr=self.lr_c)
+        # self.optimizer_a = torch.optim.Adam(filter(lambda p: p.requires_grad, self.actor.parameters()), lr=self.lr_a)
+        self.optimizer_b = torch.optim.Adam(self.backbone.parameters(), lr=self.lr_b)
+        self.optimizer_c = torch.optim.Adam(self.critic.parameters(), lr=self.lr_c)
+        self.optimizer_a = torch.optim.Adam(self.actor.parameters(), lr=self.lr_a)
         # self.optimizer = torch.optim.Adam([
         #     {'params': self.backbone.parameters(), 'lr': self.lr_b},
         #     {'params': self.actor.parameters(), 'lr': self.lr_a},
@@ -132,6 +135,7 @@ class PPO_Log(nn.Module):
         self.backbone.train()
         self.critic.train()
         # self.actor.eval()
+        self.actor.train()
         # 设置数据池
         # 试试多条链合并训练的结果
         # self.buffer = []
@@ -218,10 +222,10 @@ class PPO_Log(nn.Module):
         :return:
         """
         # 解除actor的冻结
-        if ep == self.actor_freeze_ep + 1:
-            for param in self.actor.parameters():
-                param.requires_grad = True
-            self.actor.train()
+        # if ep == self.actor_freeze_ep + 1:
+        #     for param in self.actor.parameters():
+        #         param.requires_grad = True
+        #     self.actor.train()
 
         # 等待buffer收集一个batch的数据
         if batchSize is None:
