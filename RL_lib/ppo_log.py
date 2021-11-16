@@ -70,7 +70,7 @@ class PPO_Log(nn.Module):
                  backboneParam=None, criticParam=None, actorParam=None,
                  lr_backbone=0.001, lr_critic=0.001, lr_actor=0.001,
                  K_epoch=5, train_batch_size=100, actor_freeze_ep=10, eps_clips=0.2, gamma=0.9, num_graph=100, max_grad_norm=1,
-                 pool=None, action_space=4):
+                 pool=None, action_space=4, max_loop=1):
         """
         PPO类初始函数
         :param backboneParam: backbone网络参数，被封装为ArgumentParser
@@ -145,6 +145,8 @@ class PPO_Log(nn.Module):
         self.loss_a_list = []
         self.loss_c_list = []
         self.action_space = action_space
+        self.buffer_cnt = 0
+        self.buffer_loop = max_loop
 
     def forward(self, data_batch, max_size, actions):
         data_batch_ = data_batch.clone().to(device)
@@ -246,11 +248,14 @@ class PPO_Log(nn.Module):
             actions_tmp = [t.action for t in self.buffer[id_chain]]
             reward_tmp = [t.reward for t in self.buffer[id_chain]]
             old_action_log_prob_tmp = [t.a_log_prob for t in self.buffer[id_chain]]
+            done_tmp = [t.done for t in self.buffer[id_chain]]
 
             # 计算奖励期望的蒙特卡洛统计
             R = 0
             Gt_tmp = []
-            for r in reward_tmp[::-1]:
+            for r, done in zip(reward_tmp[::-1], done_tmp[::-1]):
+                if done:
+                    R = 0
                 R = r + self.gamma * R
                 Gt_tmp.insert(0, R)
 
@@ -309,9 +314,9 @@ class PPO_Log(nn.Module):
                 # self.optimizer.zero_grad()
 
                 loss_all.backward()
-                # nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
-                # nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
-                # nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.backbone.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
 
                 # self.optimizer_b.step()
                 # if self.actor_freeze_ep < ep:
@@ -337,8 +342,11 @@ class PPO_Log(nn.Module):
 
 
     def clean_buffer(self):
-        for j in range(len(self.buffer)):
-            del self.buffer[j][:]
+        self.buffer_cnt += 1
+        if self.buffer_cnt % self.buffer_loop == 0:
+            self.buffer_cnt = 0
+            for j in range(len(self.buffer)):
+                del self.buffer[j][:]
 
     def save(self, model_dir, episode):
         """
