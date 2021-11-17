@@ -231,6 +231,14 @@ def main():
 
         # 重置环境，获得初始状态
         state = env.reset()
+
+        for i in range(len(env.graphs)):
+            tag_ = 'graph_{}/'.format(i)
+            writer.add_scalar(tag_ + 'init_energy', env.last_energy_list[i], i_episode)
+            writer.add_scalar(tag_ + 'init_distance', env.last_distance_list[i], i_episode)
+            writer.add_text(tag_ + 'init_sequence' + str(i_episode), env.graphs[i].y['seq_base'])
+            writer.add_scalar(tag_ + "init_ratio", get_pair_ratio(env.graphs[i], 4), i_episode)
+
         # ratio = get_pair_ratio(env.graphs[0], 4)
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
