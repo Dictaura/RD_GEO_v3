@@ -118,7 +118,7 @@ def main():
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
-    reward_type = 'distance'
+    reward_type = 'energy'
     done_type = 'distance'
 
     writer.add_text('reward type', reward_type)

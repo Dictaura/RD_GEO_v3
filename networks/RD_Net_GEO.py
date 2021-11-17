@@ -16,7 +16,8 @@ class GAT_Multi_heads(nn.Module):
         self.GCN = conv_g.GCNConv(self.in_size * self.n_heads, self.out_size, bias=False, normalize=True)
 
     def forward(self, x, edge_index, edge_weight=None):
-        y_gat = self.GAT(x, edge_index) + x.repeat(self.n_heads, 1)
+        y_gat = self.GAT(x, edge_index)
+        y_gat += x.repeat(1, self.n_heads)
         y = self.GCN(y_gat, edge_index, edge_weight=edge_weight)
         return y
 
@@ -46,7 +47,7 @@ class BackboneNet(nn.Module):
     def forward(self, x, edge_index, edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight=edge_weight)
-            x = F.relu(x)
+            x = F.leaky_relu(x)
         return x
 
 
@@ -79,10 +80,10 @@ class ActorNet(nn.Module):
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight)
-            x = F.relu(x)
+            x = F.leaky_relu(x)
 
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.leaky_relu(self.fc1(x))
+        x = F.leaky_relu(self.fc2(x))
 
         x = x.view(x.size(0)//max_size, max_size, -1)
         x = torch.flatten(x, 1, 2)
@@ -120,10 +121,10 @@ class CriticNet(nn.Module):
     def forward(self, x, edge_index, max_size,edge_weight=None):
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight)
-            x = F.relu(x)
+            x = F.leaky_relu(x)
 
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        x = F.leaky_relu(self.fc1(x))
+        x = F.leaky_relu(self.fc2(x))
 
         x = x.view(x.size(0)//max_size, max_size, -1)
         value = torch.sum(x, dim=1)
