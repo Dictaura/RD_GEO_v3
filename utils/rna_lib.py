@@ -679,13 +679,13 @@ def edge_distance(edge_real, edge_aim):
     real_h = edge_real.t().float()
     aim_h = edge_aim.t().float()
 
-    padding = torch.tensor([0, 0]).view(1,-1).float()
-
-    if real_h.size(0) == 0:
-        real_h = torch.cat([padding, real_h], dim=0)
-
-    if aim_h.size(0) == 0:
-        aim_h = torch.cat([padding, aim_h], dim=0)
+    # padding = torch.tensor([0, 0]).view(1,-1).float()
+    #
+    # if real_h.size(0) == 0:
+    #     real_h = torch.cat([padding, real_h], dim=0)
+    #
+    # if aim_h.size(0) == 0:
+    #     aim_h = torch.cat([padding, aim_h], dim=0)
     distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
     distance_r_a = torch.min(distance_matrix, 1)[0]
     distance_a_r = torch.min(distance_matrix, 0)[0]
