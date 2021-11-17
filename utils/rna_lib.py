@@ -241,7 +241,8 @@ def get_distance_from_onehot(seq_onehot ,dotB_Aim):
     """
     seq_base = seq_onehot2Base(seq_onehot)
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    # distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim)
     return distance
 
 
@@ -253,7 +254,8 @@ def get_distance_from_base(seq_base ,dotB_Aim):
     :return: 距离
     """
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    # distance = Levenshtein.distance(dotB_Real, dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim)
     return distance
 
 
@@ -265,7 +267,8 @@ def get_distance_from_base_norm(seq_base ,dotB_Aim):
     :return: 距离
     """
     dotB_Real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
+    # distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
+    distance = RNA.hamming_distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
     return distance
 
 
@@ -279,7 +282,8 @@ def get_distance_from_graph(graph):
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
     dotB_real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_real, dotB_aim)
+    # distance = Levenshtein.distance(dotB_real, dotB_aim)
+    distance = RNA.hamming_distance(dotB_real, dotB_aim)
     return distance
 
 
@@ -293,7 +297,8 @@ def get_distance_from_graph_norm(graph):
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
     dotB_real = RNA.fold(seq_base)[0]
-    distance = Levenshtein.distance(dotB_real, dotB_aim) / len(dotB_aim)
+    # distance = Levenshtein.distance(dotB_real, dotB_aim) / len(dotB_aim)
+    distance = RNA.hamming_distance(dotB_real, dotB_aim) / len(dotB_aim)
     return distance
 
 
@@ -451,7 +456,11 @@ def graph_padding(graph, max_size=None):
 # 检验碱基配对率
 #############################################################
 
-def get_pair_ratio(graph):
+def get_pair_ratio(graph, action_space=4):
+    if action_space == 4:
+        base_pair_dict_ = base_pair_dict_4
+    else:
+        base_pair_dict_ = base_pair_dict
     pair_cnt = 0
     paired_cnt = 0
     # seq_base = list(seq_onehot2Base(graph.x))
@@ -463,7 +472,7 @@ def get_pair_ratio(graph):
             pair_cnt += 1
             base = seq_base[place]
             pair_base = seq_base[pair_place]
-            if pair_base in base_pair_dict[base]:
+            if pair_base in base_pair_dict_[base]:
                 paired_cnt += 1
     ratio = float(paired_cnt) / (pair_cnt + 1e-10)
     return ratio

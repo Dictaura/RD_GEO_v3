@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 from utils.rna_lib import seq_onehot2Base, get_energy_onehot, get_energy_base, \
-    get_distance_from_base, get_topology_distance
+    get_distance_from_base, get_topology_distance, get_pair_ratio
 from random import choice, sample
 import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
@@ -95,7 +95,7 @@ def main():
     max_size = max(len_list)
 
     # 总步数
-    max_train_timestep = int(60000)
+    max_train_timestep = int(20000)
 
     # 每episode的步数
     max_ep_len = 200
@@ -118,8 +118,10 @@ def main():
     cal_freq_decay = 20000
 
     # reward结算模式和done判定模式
-    reward_type = 'energy'
+    reward_type = 'distance'
     done_type = 'distance'
+
+    writer.add_text('reward type', reward_type)
 
     env = RNA_Graphs_Env(dataset, cal_freq=cal_freq_start, max_size=max_size, pool=pool_env)
 
@@ -159,7 +161,7 @@ def main():
                 pool=pool_agent).to(device)
 
     # 加载模型
-    # agent.load(root + '/logs/PPO_logs_2021_10_21_21_22_01/Model/', 200)
+    # agent.load(root + '/logs/PPO_logs_2021_11_10_22_01_49/Model/', 100)
 
     # 学习率更新策略
     # schedualer_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
@@ -222,6 +224,14 @@ def main():
 
         # 重置环境，获得初始状态
         state = env.reset_4()
+
+        for i in range(len(env.graphs)):
+            tag_ = 'graph_{}/'.format(i)
+            writer.add_scalar(tag_ + 'init_energy', env.last_energy_list[i], i_episode)
+            writer.add_scalar(tag_ + 'init_distance', env.last_distance_list[i], i_episode)
+            writer.add_text(tag_ + 'init_sequence' + str(i_episode), env.graphs[i].y['seq_base'])
+            writer.add_scalar(tag_ + "init_ratio", get_pair_ratio(env.graphs[i], 4), i_episode)
+
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
         state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
@@ -309,6 +319,7 @@ def main():
         final_distance = pool_main.map(get_distance_from_base, final_seqs_base, final_dotBs)
         final_distance_topo = pool_main.map(get_topology_distance, final_graphs, env.aim_edge_h_list)
         final_distance = list(final_distance)
+        final_ratio = pool_main.map(get_pair_ratio, final_graphs)
         final_rewards = []
         for i in range(len(agent.buffer)):
             rewards = [g.reward for g in agent.buffer[i]]
@@ -364,11 +375,13 @@ def main():
                 writer.add_histogram(tag_ + '/grad', value.grad.data.cpu().numpy(), i_episode)
 
             for i in range(len(env.graphs)):
-                writer.add_scalar('reward_' + str(i), final_rewards[i], i_episode)
-                writer.add_scalar('energy_' + str(i), final_energy[i], i_episode)
-                writer.add_scalar('distance_' + str(i), final_distance[i], i_episode)
-                writer.add_scalar('distance_tp_' + str(i), final_distance_topo[i], i_episode)
-                writer.add_text('sequence_' + str(i), final_seqs_base[i], i_episode)
+                tag_ = 'graph_{}/'.format(i)
+                writer.add_scalar(tag_ + 'reward', final_rewards[i], i_episode)
+                writer.add_scalar(tag_ + 'energy', final_energy[i], i_episode)
+                writer.add_scalar(tag_ + 'distance', final_distance[i], i_episode)
+                writer.add_scalar(tag_ + 'distance_tp', final_distance_topo[i], i_episode)
+                writer.add_text(tag_ + 'sequence' + str(i_episode), final_seqs_base[i])
+                writer.add_scalar(tag_ + "ratio", final_ratio[i], i_episode)
 
             agent.clean_buffer()
 

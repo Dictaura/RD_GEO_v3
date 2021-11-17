@@ -276,10 +276,11 @@ class RNA_Graphs_Env(gym.Env):
 
         self.last_energy_list = self.pool.map(get_energy_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
-        self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        # self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
         self.forbidden_actions_list = list(self.pool.map(forbidden_actions_pair_4, self.graphs))
-        # self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+
 
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
 
@@ -320,10 +321,11 @@ class RNA_Graphs_Env(gym.Env):
 
         self.last_energy_list = self.pool.map(get_energy_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
-        self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        # self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+        self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
         self.last_distance_list = np.array(list(self.last_distance_list))
         self.forbidden_actions_list = list(self.pool.map(forbidden_actions_pair_4, self.graphs))
-        # self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+
 
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list()
 
@@ -346,8 +348,8 @@ class RNA_Graphs_Env(gym.Env):
         if ep % self.cal_freq == 0:
             energy_list = self.pool.map(get_energy_graph, self.graphs)
             energy_list = np.array(list(energy_list))
-            # distance_list = self.pool.map(get_distance_from_graph, self.graphs)
-            distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
+            distance_list = self.pool.map(get_distance_from_graph, self.graphs)
+            # distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
             distance_list = np.array(list(distance_list))
         else:
             energy_list = self.last_energy_list
