@@ -275,6 +275,11 @@ class PPO(nn.Module):
             action_log_probs = dist.log_prob(actions)
             # actions_prob = action_prob.gather(dim=1, index=actions).to(device)
             # actions = actions.to(device)
+        if type_ == 'selectActionMax':
+            actions = self.pool.map(get_action_max_forbid, action_prob_list, len_list, forbidden_actions_list)
+            actions = torch.tensor(list(actions), dtype=torch.long).view(-1, )
+            dist = Categorical(action_prob)
+            action_log_probs = dist.log_prob(actions)
 
         return actions.detach(), action_log_probs.detach()
 
