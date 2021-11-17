@@ -1,5 +1,5 @@
 /data/raw/
 /data/processed/
 /logs/
-/.idea
+/.idea/
 test.py
