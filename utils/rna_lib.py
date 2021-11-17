@@ -651,9 +651,9 @@ def get_edge_h(dotB):
     u = []
     v = []
 
-    # for i in range(l - 1):
-    #     u += [i]
-    #     v += [i + 1]
+    for i in range(l - 1):
+        u += [i]
+        v += [i + 1]
 
     stack = Stack()
     for i in range(l):
@@ -701,16 +701,16 @@ def edge_distance_norm(edge_real, edge_aim, l_real, l_aim):
     real_h = edge_real.t().float()
     aim_h = edge_aim.t().float()
 
-    n_real = real_h.size(0)
-    n_aim = aim_h.size(0)
+    n_real = real_h.size(0) - l_real + 1
+    n_aim = aim_h.size(0) - l_aim + 1
 
-    padding = torch.tensor([0, 0]).view(1, -1).float()
-
-    if n_real == 0:
-        real_h = torch.cat([padding, real_h], dim=0)
-
-    if n_aim == 0:
-        aim_h = torch.cat([padding, aim_h], dim=0)
+    # padding = torch.tensor([0, 0]).view(1, -1).float()
+    #
+    # if n_real == 0:
+    #     real_h = torch.cat([padding, real_h], dim=0)
+    #
+    # if n_aim == 0:
+    #     aim_h = torch.cat([padding, aim_h], dim=0)
 
     norm_base = math.sqrt(
         n_real * ((l_aim//2)**2 + (l_aim//2-1)**2) + n_aim * ((l_real//2)**2 + (l_real//2-1)**2)
