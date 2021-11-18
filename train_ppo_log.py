@@ -256,14 +256,17 @@ def main():
         # with tqdm(total=max_ep_len, desc=f'Play: Episode {i_episode}/{max_train_timestep//max_ep_len}', unit='it') as pbar:
         for t in range(1, max_ep_len+1):
 
-            # 智能体产生动作
-            actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
+            # heat map
 
-            prob_show = action_log_probs.detach().cpu().numpy()
+            _, probs = agent.forward(state_, max_size)
+            prob_show = probs.detach().cpu().view(1, -1).numpy()
 
             sns.heatmap(data=prob_show, cmap="RdBu_r")
 
             plt.show()
+
+            # 智能体产生动作
+            actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
 
             # 环境执行动作
             next_state, reward_list, is_termial, done_list, ids = env.step(actions, t)
