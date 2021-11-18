@@ -163,7 +163,7 @@ def main():
                 pool=pool_agent).to(device)
 
     # 加载模型
-    agent.load(root + '/logs/PPO_logs_2021_11_18_07_52_09/Model/', 100)
+    agent.load(root + '/logs/PPO_logs_2021_11_17_20_30_16/Model/', 100)
 
     # 学习率更新策略
     # schedualer_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
@@ -225,7 +225,7 @@ def main():
         # current_ep_reward_np = torch.tensor(np.zeros(len(env.len_list)), dtype=float)
 
         # 重置环境，获得初始状态
-        state = env.reset_4()
+        state = env.reset_pair_4()
 
         for i in range(len(env.graphs)):
             tag_ = 'graph_{}/'.format(i)
@@ -248,14 +248,15 @@ def main():
         # with tqdm(total=max_ep_len, desc=f'Play: Episode {i_episode}/{max_train_timestep//max_ep_len}', unit='it') as pbar:
         for t in range(1, max_ep_len+1):
 
-            # 智能体产生动作
-            actions, action_log_probs = agent.work_forbid_log(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
-
-            prob_show = action_log_probs.detach().cpu().numpy()
+            _, probs = agent.forward(state_, max_size)
+            prob_show = probs.detach().cpu().view(1, -1).numpy()
 
             sns.heatmap(data=prob_show, cmap="RdBu_r")
 
             plt.show()
+
+            # 智能体产生动作
+            actions, action_log_probs = agent.work_forbid_log(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
 
             # 环境执行动作
             next_state, reward_list, is_termial, done_list, ids = env.step_4(actions, t, reward_type=reward_type,
