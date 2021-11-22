@@ -250,7 +250,6 @@ class PPO_Log(nn.Module):
             actions_prob = torch.ones(actions.shape, dtype=float)
         return actions, actions_prob
 
-
     def work_forbid_log(self, data_batch, len_list, max_size, forbidden_actions_list, type_='selectAction'):
         """
         产生动作
