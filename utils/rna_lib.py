@@ -1,3 +1,5 @@
+import math
+
 import RNA
 import random
 import matplotlib.pyplot as plt
@@ -15,10 +17,10 @@ import multiprocessing as mp
 base_color_dict = {'A': 'y', 'U': 'b', 'G': 'r', 'C': 'g'}
 base_list = ['A', 'U', 'C', 'G']
 onehot_list = [np.array([1, 0, 0, 0]), np.array([0, 1, 0, 0]), np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])]
-base_pair_dict = {'A': ['U'], 'U': ['A', 'G'], 'G': ['U', 'C'], 'C': ['G'] }
-base_pair_dict_4 = {'A': ['U'], 'U': ['A'], 'G': ['C'], 'C': ['G'] }
-base_pair_list = [['A', 'U'], ['U', 'A'], ['U', 'G'], ['G', 'U'], ['G', 'C'], ['C', 'G']]
-base_pair_list_4 = [['A', 'U'], ['U', 'A'], ['G', 'C'], ['C', 'G']]
+base_pair_dict_6 = {'A': ['U'], 'U': ['A', 'G'], 'C': ['G'], 'G': ['U', 'C']}
+base_pair_dict_4 = {'A': ['U'], 'U': ['A'], 'C': ['G'], 'G': ['C']}
+base_pair_list_6 = [['A', 'U'], ['U', 'A'], ['U', 'G'], ['G', 'U'], ['G', 'C'], ['C', 'G']]
+base_pair_list_4 = [['A', 'U'], ['U', 'A'], ['C', 'G'], ['G', 'C']]
 
 #############################################################
 # 数据结构和工具
@@ -196,7 +198,7 @@ def seq_onehot2Base(seq_onehot):
 # 能量计算
 #############################################################
 
-def get_energy_onehot(seq_onehot, dotB):
+def get_energy_from_onehot(seq_onehot, dotB):
     """
     由onehot序列计算能量
     :param seq_onehot: onehot序列
@@ -207,7 +209,7 @@ def get_energy_onehot(seq_onehot, dotB):
     return energy
 
 
-def get_energy_base(seq_base, dotB):
+def get_energy_from_base(seq_base, dotB):
     """
     由碱基序列序列计算能量
     :param seq_base: 碱基序列
@@ -217,14 +219,14 @@ def get_energy_base(seq_base, dotB):
     return energy
 
 
-def get_energy_graph(graph):
+def get_energy_from_graph(graph):
     """
     由graph计算能量
     :param graph: 图，pyg.Data
     :return: 能量
     """
     # energy = get_energy_onehot(graph.x, graph.y['dotB'])
-    energy = get_energy_base(graph.y['seq_base'], graph.y['dotB'])
+    energy = get_energy_from_base(graph.y['seq_base'], graph.y['dotB'])
     return energy
 
 
@@ -267,7 +269,7 @@ def get_distance_from_base_norm(seq_base ,dotB_Aim):
     :return: 距离
     """
     dotB_Real = RNA.fold(seq_base)[0]
-    # distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
+    #distance = Levenshtein.distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
     distance = RNA.hamming_distance(dotB_Real, dotB_Aim) / len(dotB_Aim)
     return distance
 
@@ -337,32 +339,15 @@ def random_init_sequence(dotB, max_size=None):
     return seq_base, seq_onehot
 
 
-def random_init_sequence_multi(args):
-    """
-    随机初始化碱基序列
-    :param dotB: 点括号结构
-    :param max_size: 序列最大长度
-    :return: 随机碱基序列，随机onehot序列
-    """
-    dotB = args[0]
-    max_size = args[1]
-    l = len(dotB)
-    seq_base = ''
-    seq_onehot = []
-    for i in range(l):
-        base_tmp, onehot_tmp = random_base()
-        seq_base += base_tmp
-        seq_onehot.append(onehot_tmp)
-    seq_onehot += [[0, 0, 0, 0]] * (max_size - l)
-    seq_onehot = torch.tensor(seq_onehot)
-    return seq_base, seq_onehot
-
-
-def random_base_pair():
+def random_base_pair(action_space):
     """
     随机获得一个碱基对
     :return: 碱基字符对，onehot编码对
     """
+    if action_space == 4:
+        base_pair_dict = base_pair_dict_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
     onehot = [0, 0, 0, 0]  # A, U, C, G
     seed = random.randrange(0, 4, 1)
     base = base_list[seed]
@@ -372,7 +357,15 @@ def random_base_pair():
     return [base, onehot], [base_pair, onehot_pair]
 
 
-def random_init_sequence_pair(dotB, edge_index, max_size):
+def random_init_sequence_pair(dotB, edge_index, max_size, action_space):
+    """
+    配对初始化序列
+    """
+    if action_space == 4:
+        base_pair_dict = base_pair_dict_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
+
     l = len(dotB)
     seq_base = ''
     for i in range(l):
@@ -386,12 +379,12 @@ def random_init_sequence_pair(dotB, edge_index, max_size):
         pair_place = edge_index[1][i]
         # if place > pair_place:
         #     continue
-        if np.all(seq_onehot[place] == 0.):
-            base_tmp = seq_base[place]
-            seq_onehot[place] = base2Onehot(base_tmp).numpy()
-            if place < pair_place-1 and np.all(seq_onehot[pair_place] == 0):
-                seq_base[pair_place] = base_pair_dict[base_tmp][dice(len(base_pair_dict[base_tmp]), 0)]
-                seq_onehot[pair_place] = base2Onehot(seq_base[pair_place]).numpy()
+        #if np.all(seq_onehot[place] == 0.):
+        base_tmp = seq_base[place]
+        seq_onehot[place] = base2Onehot(base_tmp).numpy()
+        if place < pair_place-1:
+            seq_base[pair_place] = base_pair_dict[base_tmp][dice(len(base_pair_dict[base_tmp]), 0)]
+            seq_onehot[pair_place] = base2Onehot(seq_base[pair_place]).numpy()
     seq_onehot = torch.tensor(seq_onehot)
     seq_base = ''.join(seq_base)
     return seq_base, seq_onehot
@@ -456,11 +449,11 @@ def graph_padding(graph, max_size=None):
 # 检验碱基配对率
 #############################################################
 
-def get_pair_ratio(graph, action_space=4):
+def get_pair_ratio(graph, action_space):
     if action_space == 4:
-        base_pair_dict_ = base_pair_dict_4
-    else:
-        base_pair_dict_ = base_pair_dict
+        base_pair_dict = base_pair_dict_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
     pair_cnt = 0
     paired_cnt = 0
     # seq_base = list(seq_onehot2Base(graph.x))
@@ -472,7 +465,7 @@ def get_pair_ratio(graph, action_space=4):
             pair_cnt += 1
             base = seq_base[place]
             pair_base = seq_base[pair_place]
-            if pair_base in base_pair_dict_[base]:
+            if pair_base in base_pair_dict[base]:
                 paired_cnt += 1
     ratio = float(paired_cnt) / (pair_cnt + 1e-10)
     return ratio
@@ -490,9 +483,9 @@ def rna_act(action, graph):
     return graph
 
 
-def rna_act_pair(action_, graph, forbidden_actions):
+def rna_act_pair(action_, graph, forbidden_actions, action_space):
     """
-    动作空间6n
+    动作空间 action_space
     :param action: 动作编号
     :param graph: 受动作的图
     :param forbidden_actions: 禁止动作表
@@ -500,9 +493,15 @@ def rna_act_pair(action_, graph, forbidden_actions):
     """
     # graph = graph_.clone()
     # 获取动作位置和改写的碱基对
+    if action_space == 4:
+        base_pair_dict = base_pair_dict_4
+        base_pair_list = base_pair_list_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
+        base_pair_list = base_pair_list_6
     action = action_.cpu()
-    place = action // 6
-    base_pair = base_pair_list[action % 6]
+    place = action // action_space
+    base_pair = base_pair_list[action % action_space]
     onehot = base2Onehot(base_pair[0])
     pair_onehot = base2Onehot(base_pair[1])
 
@@ -535,8 +534,8 @@ def rna_act_pair(action_, graph, forbidden_actions):
             forbidden_change_old = base_pair_list.index([base_old, pair_base_old])
             forbidden_change_old_pair = base_pair_list.index([pair_base_old, base_old])
             # 获取旧禁止动作
-            forbidden_action_old = (place * 6 + forbidden_change_old).item()
-            forbidden_action_old_pair = (place_h * 6 + forbidden_change_old_pair).item()
+            forbidden_action_old = (place * action_space + forbidden_change_old).item()
+            forbidden_action_old_pair = (place_h * action_space + forbidden_change_old_pair).item()
             # 删去旧动作
             # print("f_o: {}, p_f_o: {}".format(forbidden_action_old, forbidden_action_old_pair))
             forbidden_actions.remove(forbidden_action_old)
@@ -547,8 +546,8 @@ def rna_act_pair(action_, graph, forbidden_actions):
         base_pair_r = base_pair.copy()
         base_pair_r.reverse()
         forbidden_change_pair = base_pair_list.index(base_pair_r)
-        forbidden_action = (place * 6 + forbidden_change).item()
-        forbidden_action_pair = (place_h * 6 + forbidden_change_pair).item()
+        forbidden_action = (place * action_space + forbidden_change).item()
+        forbidden_action_pair = (place_h * action_space + forbidden_change_pair).item()
         # 加入新动作
         # print("f: {}, p_f: {}\n".format(forbidden_action, forbidden_action_pair))
         forbidden_actions.append(forbidden_action)
@@ -560,11 +559,11 @@ def rna_act_pair(action_, graph, forbidden_actions):
         forbidden_changes = [j for j in range(len(base_pair_list)) if base_pair_list[j][0] == base_pair[0]]
         # 删除旧禁止动作
         for change_old in forbid_changes_old:
-            forbidden_action_old = (place * 6 + change_old).item()
+            forbidden_action_old = (place * action_space + change_old).item()
             forbidden_actions.remove(forbidden_action_old)
         # 加入新禁止动作
         for change in forbidden_changes:
-            forbidden_action = (place * 6 + change).item()
+            forbidden_action = (place * action_space + change).item()
             forbidden_actions.append(forbidden_action)
 
     graph.y['seq_base'] = ''.join(seq_base_list)
@@ -573,93 +572,13 @@ def rna_act_pair(action_, graph, forbidden_actions):
     return graph, forbidden_actions
 
 
-def rna_act_pair_multi(args):
-    """
-    动作空间6n
-    :param action: 动作编号
-    :param graph: 受动作的图
-    :param forbidden_actions: 禁止动作表
-    :return: 动作后的图
-    """
-    # graph = graph_.clone()
-    # 获取动作位置和改写的碱基对
-    action_ = args[0]
-    graph = args[1]
-    forbidden_actions = args[2]
-    action = action_.cpu()
-    place = action // 6
-    base_pair = base_pair_list[action % 6]
-    onehot = base2Onehot(base_pair[0])
-    pair_onehot = base2Onehot(base_pair[1])
-
-    seq_base_list = list(graph.y['seq_base'])
-
-    # 改变本位
-    graph.x[place] = onehot
-    base_old = seq_base_list[place]
-    seq_base_list[place] = base_pair[0]
-    # 获取邻居
-    index = (graph.edge_index[0, :] == place).nonzero()
-    pair_places = graph.edge_index[1, index]
-    # 寻找氢键并改碱基
-    place_h = -1
-    pair_base_old = ''
-    for pair_place in pair_places:
-        if place < pair_place - 1 or place > pair_place + 1:
-            place_h = pair_place
-            pair_base_old = seq_base_list[pair_place]
-            graph.x[pair_place] = pair_onehot
-            seq_base_list[pair_place] = base_pair[1]
-
-    # 如果有氢键
-    # 需要考虑本位和对位
-    if place_h >= 0:
-        # print("action: {}".format(action.item()))
-        # 删去旧的禁止动作
-        if [base_old, pair_base_old] in base_pair_list:
-            # 找到以前的位置及禁止动作
-            forbidden_change_old = base_pair_list.index([base_old, pair_base_old])
-            forbidden_change_old_pair = base_pair_list.index([pair_base_old, base_old])
-            # 获取旧禁止动作
-            forbidden_action_old = (place * 6 + forbidden_change_old).item()
-            forbidden_action_old_pair = (place_h * 6 + forbidden_change_old_pair).item()
-            # 删去旧动作
-            # print("f_o: {}, p_f_o: {}".format(forbidden_action_old, forbidden_action_old_pair))
-            forbidden_actions.remove(forbidden_action_old)
-            forbidden_actions.remove(forbidden_action_old_pair)
-        # 加入新的禁止动作
-        # if base_pair in base_pair_list:
-        forbidden_change = base_pair_list.index(base_pair)
-        base_pair_r = base_pair.copy()
-        base_pair_r.reverse()
-        forbidden_change_pair = base_pair_list.index(base_pair_r)
-        forbidden_action = (place * 6 + forbidden_change).item()
-        forbidden_action_pair = (place_h * 6 + forbidden_change_pair).item()
-        # 加入新动作
-        # print("f: {}, p_f: {}\n".format(forbidden_action, forbidden_action_pair))
-        forbidden_actions.append(forbidden_action)
-        forbidden_actions.append(forbidden_action_pair)
-    # 如果没有氢键
-    # 只考虑本位
-    elif place_h < 0:
-        forbid_changes_old = [j for j in range(len(base_pair_list)) if base_pair_list[j][0] == base_old]
-        forbidden_changes = [j for j in range(len(base_pair_list)) if base_pair_list[j][0] == base_pair[0]]
-        # 删除旧禁止动作
-        for change_old in forbid_changes_old:
-            forbidden_action_old = (place * 6 + change_old).item()
-            forbidden_actions.remove(forbidden_action_old)
-        # 加入新禁止动作
-        for change in forbidden_changes:
-            forbidden_action = (place * 6 + change).item()
-            forbidden_actions.append(forbidden_action)
-
-    graph.y['seq_base'] = ''.join(seq_base_list)
-    forbidden_actions.sort()
-
-    return graph, forbidden_actions
-
-
-def forbidden_actions_pair(graph):
+def forbidden_actions_pair(graph, action_space):
+    if action_space == 4:
+        base_pair_dict = base_pair_dict_4
+        base_pair_list = base_pair_list_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
+        base_pair_list = base_pair_list_6
     # seq_base = seq_onehot2Base(graph.x)
     seq_base = graph.y['seq_base']
     if seq_base != graph.y['seq_base']:
@@ -682,164 +601,16 @@ def forbidden_actions_pair(graph):
             base_pair = seq_base[place_h]
             if [base, base_pair] in base_pair_list:
                 forbidden_changes = base_pair_list.index([base, base_pair])
-                forbidden_actions.append(i * 6 + forbidden_changes)
+                forbidden_actions.append(i * action_space + forbidden_changes)
         # 如果没有氢键
         elif place_h < 0:
             forbidden_changes = [j for j in range(len(base_pair_list)) if base_pair_list[j][0] == base]
             for change in forbidden_changes:
-                forbidden_actions.append(i * 6 + change)
+                forbidden_actions.append(i * action_space + change)
 
     forbidden_actions.sort()
 
     return forbidden_actions
-
-
-#############################################################
-# 标准碱基配对，动作4n
-#############################################################
-
-
-def rna_act_pair_4(action_, graph, forbidden_actions):
-    """
-    动作空间4n
-    :param action: 动作编号
-    :param graph: 受动作的图
-    :param forbidden_actions: 禁止动作表
-    :return: 动作后的图
-    """
-    # graph = graph_.clone()
-    # 获取动作位置和改写的碱基对
-    action = action_.cpu()
-    place = action // 4
-    base_pair = base_pair_list_4[action % 4]
-    onehot = base2Onehot(base_pair[0])
-    pair_onehot = base2Onehot(base_pair[1])
-
-    seq_base_list = list(graph.y['seq_base'])
-
-    # 改变本位
-    graph.x[place] = onehot
-    base_old = seq_base_list[place]
-    seq_base_list[place] = base_pair[0]
-    # 获取邻居
-    index = (graph.edge_index[0, :] == place).nonzero()
-    pair_places = graph.edge_index[1, index]
-    # 寻找氢键并改碱基
-    place_h = -1
-    pair_base_old = ''
-    for pair_place in pair_places:
-        if place < pair_place - 1 or place > pair_place + 1:
-            place_h = pair_place
-            pair_base_old = seq_base_list[pair_place]
-            graph.x[pair_place] = pair_onehot
-            seq_base_list[pair_place] = base_pair[1]
-
-    # 如果有氢键
-    # 需要考虑本位和对位
-    if place_h >= 0:
-        # print("action: {}".format(action.item()))
-        # 删去旧的禁止动作
-        if [base_old, pair_base_old] in base_pair_list_4:
-            # 找到以前的位置及禁止动作
-            forbidden_change_old = base_pair_list_4.index([base_old, pair_base_old])
-            forbidden_change_old_pair = base_pair_list_4.index([pair_base_old, base_old])
-            # 获取旧禁止动作
-            forbidden_action_old = (place * 4 + forbidden_change_old).item()
-            forbidden_action_old_pair = (place_h * 4 + forbidden_change_old_pair).item()
-            # 删去旧动作
-            # print("f_o: {}, p_f_o: {}".format(forbidden_action_old, forbidden_action_old_pair))
-            forbidden_actions.remove(forbidden_action_old)
-            forbidden_actions.remove(forbidden_action_old_pair)
-        # 加入新的禁止动作
-        # if base_pair in base_pair_list_4:
-        forbidden_change = base_pair_list_4.index(base_pair)
-        base_pair_r = base_pair.copy()
-        base_pair_r.reverse()
-        forbidden_change_pair = base_pair_list_4.index(base_pair_r)
-        forbidden_action = (place * 4 + forbidden_change).item()
-        forbidden_action_pair = (place_h * 4 + forbidden_change_pair).item()
-        # 加入新动作
-        # print("f: {}, p_f: {}\n".format(forbidden_action, forbidden_action_pair))
-        forbidden_actions.append(forbidden_action)
-        forbidden_actions.append(forbidden_action_pair)
-    # 如果没有氢键
-    # 只考虑本位
-    elif place_h < 0:
-        forbid_changes_old = [j for j in range(len(base_pair_list_4)) if base_pair_list_4[j][0] == base_old]
-        forbidden_changes = [j for j in range(len(base_pair_list_4)) if base_pair_list_4[j][0] == base_pair[0]]
-        # 删除旧禁止动作
-        for change_old in forbid_changes_old:
-            forbidden_action_old = (place * 4 + change_old).item()
-            forbidden_actions.remove(forbidden_action_old)
-        # 加入新禁止动作
-        for change in forbidden_changes:
-            forbidden_action = (place * 4 + change).item()
-            forbidden_actions.append(forbidden_action)
-
-    graph.y['seq_base'] = ''.join(seq_base_list)
-    forbidden_actions.sort()
-
-    return graph, forbidden_actions
-
-
-def forbidden_actions_pair_4(graph):
-    # seq_base = seq_onehot2Base(graph.x)
-    seq_base = graph.y['seq_base']
-    if seq_base != graph.y['seq_base']:
-        print('error')
-
-    forbidden_actions = []
-    # 检查每一位
-    for i in range(len(graph.y['dotB'])):
-        base = seq_base[i]
-        # 获取氢键
-        place_h = -1
-        index = (graph.edge_index[0, :] == i).nonzero()
-        pair_places = graph.edge_index[1, index]
-        for pair_place in pair_places:
-            if i < pair_place - 1 or i > pair_place + 1:
-                place_h = pair_place
-
-        # 如果有氢键
-        if place_h >= 0:
-            base_pair = seq_base[place_h]
-            if [base, base_pair] in base_pair_list_4:
-                forbidden_changes = base_pair_list_4.index([base, base_pair])
-                forbidden_actions.append(i * 4 + forbidden_changes)
-        # 如果没有氢键
-        elif place_h < 0:
-            forbidden_changes = [j for j in range(len(base_pair_list_4)) if base_pair_list_4[j][0] == base]
-            for change in forbidden_changes:
-                forbidden_actions.append(i * 4 + change)
-
-    forbidden_actions.sort()
-
-    return forbidden_actions
-
-
-def random_init_sequence_pair_4(dotB, edge_index, max_size):
-    l = len(dotB)
-    seq_base = ''
-    for i in range(l):
-        base_tmp, _ = random_base()
-        seq_base += base_tmp
-    seq_onehot = [np.array([0., 0., 0., 0.])] * max_size
-    seq_base = list(seq_base)
-
-    for i in range(edge_index.shape[1]):
-        place = edge_index[0][i]
-        pair_place = edge_index[1][i]
-        # if place > pair_place:
-        #     continue
-        if np.all(seq_onehot[place] == 0.):
-            base_tmp = seq_base[place]
-            seq_onehot[place] = base2Onehot(base_tmp).numpy()
-            if place < pair_place-1 and np.all(seq_onehot[pair_place] == 0):
-                seq_base[pair_place] = base_pair_dict_4[base_tmp][0]
-                seq_onehot[pair_place] = base2Onehot(seq_base[pair_place]).numpy()
-    seq_onehot = torch.tensor(seq_onehot)
-    seq_base = ''.join(seq_base)
-    return seq_base, seq_onehot
 
 
 #############################################################
@@ -879,10 +650,11 @@ def get_edge_h(dotB):
     l = len(str_list)
     u = []
     v = []
-    for i in range(l):
-        for i in range(l - 1):
-            u += [i]
-            v += [i + 1]
+
+    # for i in range(l - 1):
+    #     u += [i]
+    #     v += [i + 1]
+
     stack = Stack()
     for i in range(l):
         if (str_list[i] == '('):
@@ -896,7 +668,7 @@ def get_edge_h(dotB):
     return edge_index
 
 
-def edge_distance(edge_real, edge_aim, normlize=False):
+def edge_distance(edge_real, edge_aim):
     """
     拓扑结构距离
     :param edge_real:
@@ -904,11 +676,16 @@ def edge_distance(edge_real, edge_aim, normlize=False):
     :param normlize:
     :return:
     """
-    # padding = torch.tensor([0, 0]).view(1,-1).float()
     real_h = edge_real.t().float()
-    # real_h = torch.cat([padding, real_h], dim=0)
     aim_h = edge_aim.t().float()
-    # aim_h = torch.cat([padding, aim_h], dim=0)
+
+    padding = torch.tensor([0, 0]).view(1,-1).float()
+
+    if real_h.size(0) == 0:
+        real_h = torch.cat([padding, real_h], dim=0)
+
+    if aim_h.size(0) == 0:
+        aim_h = torch.cat([padding, aim_h], dim=0)
     distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
     distance_r_a = torch.min(distance_matrix, 1)[0]
     distance_a_r = torch.min(distance_matrix, 0)[0]
@@ -918,6 +695,35 @@ def edge_distance(edge_real, edge_aim, normlize=False):
     # distance_a_r = torch.sum(distance_a_r)
     # distance = distance_r_a.item() + distance_a_r.item()
     return distance
+
+
+def edge_distance_norm(edge_real, edge_aim, l_real, l_aim):
+    real_h = edge_real.t().float()
+    aim_h = edge_aim.t().float()
+
+    n_real = real_h.size(0)
+    n_aim = aim_h.size(0)
+
+    padding = torch.tensor([0, 0]).view(1, -1).float()
+
+    if n_real == 0:
+        real_h = torch.cat([padding, real_h], dim=0)
+
+    if n_aim == 0:
+        aim_h = torch.cat([padding, aim_h], dim=0)
+
+    norm_base = math.sqrt(
+        n_real * ((l_aim//2)**2 + (l_aim//2-1)**2) + n_aim * ((l_real//2)**2 + (l_real//2-1)**2)
+    )
+
+    distance_matrix = torch.cdist(real_h, aim_h, p=2.0)
+    distance_r_a = torch.min(distance_matrix, 1)[0]
+    distance_a_r = torch.min(distance_matrix, 0)[0]
+    distance_tensor = torch.cat([distance_a_r, distance_r_a], dim=0)
+    distance = torch.norm(distance_tensor)
+    distance = distance / norm_base
+    return distance
+
 
 def get_topology_distance(graph, aim_edge_h):
     """
@@ -931,6 +737,13 @@ def get_topology_distance(graph, aim_edge_h):
     distance = edge_distance(real_edge_h, aim_edge_h)
     return distance
 
-
-
-
+def get_topology_distance_norm(graph, aim_edge_h):
+    """
+    获取标准化拓扑距离
+    """
+    real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    real_edge_h = get_edge_h(real_dotB)
+    l_real = len(real_dotB)
+    l_aim = len(graph.y['dotB'])
+    distance = edge_distance_norm(real_edge_h, aim_edge_h, l_real, l_aim)
+    return distance
