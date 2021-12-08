@@ -1,19 +1,12 @@
-import RNA
-from utils.rna_lib import get_distance_from_graph, edge_distance_norm, get_edge_h, get_graph, get_pair_ratio, \
-    random_init_sequence_pair
+import numpy as np
+import torch
 
-seq = 'UACACAGAAUAGGGUCUUCCCACGCGACCGGGACAGGAACGAAACUAAAAGACCGACAGGUGACGCGGCAGUGGCCGCCCCGAAGCUCUUACCUCAGGACCCUGUUCUAAAGUAGCAACCUGUUUAGACAGGGUGGUCCUGGGGGUCAGCCCACAGAGGAGGUCCUCGGAGGCUGGCCCCAGCUCUAAGGGCCAUUUGAUGGCAGUACCAAUGUGGGUGUCCCCACAUUGUAGUUGCCAUUCACAGGGUGUC'
-dotB = RNA.fold(seq)[0]
+from utils.rna_lib import structure_dotB2Edge, structure_edge2DotB
 
-graph = get_graph(seq_base=seq, dotB=dotB)
+t = torch.Tensor([0,0,0,1])
 
-ratio1 = get_pair_ratio(graph, 4)
+flag = torch.any(t == 1.)
 
-seq, onehot = random_init_sequence_pair(dotB, graph.edge_index, max_size=len(dotB), action_space=4)
+print(flag)
 
-graph.x = onehot
-graph.y['seq_base'] = seq
-
-ratio2 = get_pair_ratio(graph, 4)
-
-print(ratio2)
+print(len("((((...(((....(((((((....((((((((...............((.((((...(((........)"))
