@@ -250,12 +250,12 @@ def main():
 
             # heat map
 
-            _, probs = agent.forward(state_, max_size)
-            prob_show = probs.detach().cpu().view(1, -1).numpy()
-
-            sns.heatmap(data=prob_show, cmap="RdBu_r")
-
-            plt.show()
+            # _, probs = agent.forward(state_, max_size)
+            # prob_show = probs.detach().cpu().view(1, -1).numpy()
+            #
+            # sns.heatmap(data=prob_show, cmap="RdBu_r")
+            #
+            # plt.show()
 
             # 智能体产生动作
             actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
