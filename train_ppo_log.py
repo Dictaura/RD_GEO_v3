@@ -151,7 +151,7 @@ def main():
     actor_freeze_ep = 0
 
     # 学习率衰减率
-    lr_decay = 0.995
+    lr_decay = 0.999
 
     # 奖励衰减
     gamma = 0.9
@@ -168,12 +168,12 @@ def main():
                 pool=pool_agent, action_space=action_space).to(device)
 
     # 加载模型
-    agent.load(root + '/logs/PPO_logs_2021_11_16_16_44_28/Model/', 100)
+    # agent.load(root + '/logs/PPO_logs_2021_11_16_16_44_28/Model/', 100)
 
     # 学习率更新策略
-    schedualer_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
-    schedualer_c = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_c, lr_decay)
-    schedualer_a = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_a, lr_decay)
+    scheduler_b = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_b, lr_decay)
+    scheduler_c = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_c, lr_decay)
+    scheduler_a = torch.optim.lr_scheduler.ExponentialLR(agent.optimizer_a, lr_decay)
 
     #####################################################
 
@@ -250,12 +250,12 @@ def main():
 
             # heat map
 
-            _, probs = agent.forward(state_, max_size)
-            prob_show = probs.detach().cpu().view(1, -1).numpy()
-
-            sns.heatmap(data=prob_show, cmap="RdBu_r")
-
-            plt.show()
+            # _, probs = agent.forward(state_, max_size)
+            # prob_show = probs.detach().cpu().view(1, -1).numpy()
+            #
+            # sns.heatmap(data=prob_show, cmap="RdBu_r")
+            #
+            # plt.show()
 
             # 智能体产生动作
             actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
@@ -366,9 +366,9 @@ def main():
         if time_step % update_timestep == 0:
             loss_a, loss_c = agent.trainStep(i_episode, max_size)
             loss_a = abs(loss_a)
-            schedualer_b.step()
-            schedualer_c.step()
-            schedualer_a.step()
+            scheduler_b.step()
+            scheduler_c.step()
+            scheduler_a.step()
 
             # 记录到tensorboard
             # loss
