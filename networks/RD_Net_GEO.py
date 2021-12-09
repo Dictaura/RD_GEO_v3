@@ -46,7 +46,7 @@ class BackboneNet(nn.Module):
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-    def forward(self, x, edge_index, edge_weight=None, max_size=100):
+    def forward(self, x, edge_index, max_size=100, edge_weight=None):
         x1 = x.view(-1, max_size, 4)
         x1 = x1.permute(0, 2, 1)
         x1 = F.relu(self.conv1d(x1))
