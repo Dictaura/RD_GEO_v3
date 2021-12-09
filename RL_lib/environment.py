@@ -8,7 +8,7 @@ import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
-    get_distance_from_graph, get_topology_distance_norm, get_dotB, structure_dotB2Edge
+    get_distance_from_graph, get_topology_distance_norm, get_dotB, structure_dotB2Edge, get_graph
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -24,7 +24,7 @@ class RNA_Graphs_Env(gym.Env):
     """
     多RNA图的环境
     """
-    def __init__(self, dataset, cal_freq=1, max_size=None, pool=None,
+    def __init__(self, dotB_list, cal_freq=1, max_size=None, pool=None,
                  reward_type='energy', done_type='distance', distance_type='hamming', init='unpair', action_space=4):
         """
         多RNA环境初始化
@@ -43,13 +43,21 @@ class RNA_Graphs_Env(gym.Env):
             self.pool = pathos_mp.ProcessingPool()
         else:
             self.pool = pool
-        if max_size is not None:
-            partial_work = partial(graph_padding, max_size=max_size)
-            graphs_ = self.pool.map(partial_work, dataset)
 
-            self.graphs_ = list(graphs_)
-        else:
-            self.graphs_ = dataset
+        self.dotB_list = dotB_list
+        self.max_size = max_size
+
+        # if max_size is not None:
+        #     partial_work = partial(graph_padding, max_size=max_size)
+        #     graphs_ = self.pool.map(partial_work, dataset)
+        #     self.graphs_ = list(graphs_)
+        # else:
+        #     self.graphs_ = dataset
+
+        gen_work = partial(get_graph, max_size=self.max_size)
+
+        self.graphs_ = self.pool.map(gen_work, self.dotB_list)
+
         self.graphs = torch_geometric.data.Batch.from_data_list(self.graphs_).clone()
         # self.graphs_ = self.graphs.clone().to_data_list()
         self.graphs = self.graphs.to_data_list()
