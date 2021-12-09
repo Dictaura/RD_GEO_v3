@@ -93,18 +93,15 @@ class RNA_Graphs_Env(gym.Env):
 
         init_result = list(init_result)
         init_result = list(zip(*init_result))
+        real_dotB_list = self.pool.map(get_dotB, self.graphs)
+        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
         for i in range(len(self.graphs)):
             self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]
+            self.graphs[i].y['real_dotB'] = real_dotB_list[i]
+            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
 
         self.last_energy_list = self.pool.map(get_energy_from_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
-
-        real_dotB_list = self.pool.map(get_dotB, self.graphs)
-        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
-
-        for i in range(len(self.graphs)):
-            self.graphs[i].y['real_dotB'] = real_dotB_list[i]
-            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
 
         if self.distance_type == 'hamming':
             self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
