@@ -22,15 +22,18 @@ class GAT_Multi_heads(nn.Module):
 
 
 class BackboneNet(nn.Module):
-    def __init__(self, in_size, out_size, hide_size_list, n_head_list, n_layers, concat=True):
+    def __init__(self, in_size, out_size, hide_size_list, n_head_list, n_layers, conv1d_size, concat=True):
         super(BackboneNet, self).__init__()
         self.in_size = in_size
+        self.conv1d_size = conv1d_size
         self.out_size = out_size
         self.hide_size_list = hide_size_list
         self.n_head_list = n_head_list
         self.n_layers = n_layers
         self.concat = concat
-        self.size_layer_list = [in_size] + hide_size_list + [out_size]
+        self.size_layer_list = [conv1d_size + in_size] + hide_size_list + [out_size]
+
+        self.conv1d = nn.Conv1d(in_size, conv1d_size, kernel_size=7, stride=1, padding=3)
 
         self.layers_gat = []
 
@@ -43,7 +46,13 @@ class BackboneNet(nn.Module):
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 
-    def forward(self, x, edge_index, edge_weight=None):
+    def forward(self, x, edge_index, edge_weight=None, max_size=100):
+        x1 = x.view(-1, max_size, 4)
+        x1 = x1.permute(0, 2, 1)
+        x1 = F.relu(self.conv1d(x1))
+        x1 = x1.permute(0, 2, 1)
+        x1 = torch.flatten(x1, 0, 1)
+        x = torch.cat([x, x1], dim=1)
         for layer in self.layers_gat:
             x = layer(x, edge_index, edge_weight=edge_weight)
             x = F.relu(x)
