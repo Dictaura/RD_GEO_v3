@@ -283,7 +283,8 @@ def get_distance_from_graph(graph):
     # distance = get_distance_Levenshtein(graph.x, graph.y['dotB'])
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
-    dotB_real = RNA.fold(seq_base)[0]
+    # dotB_real = RNA.fold(seq_base)[0]
+    dotB_real = graph.y['real_dotB']
     # distance = Levenshtein.distance(dotB_real, dotB_aim)
     distance = RNA.hamming_distance(dotB_real, dotB_aim)
     return distance
@@ -298,7 +299,8 @@ def get_distance_from_graph_norm(graph):
     # distance = get_distance_Levenshtein(graph.x, graph.y['dotB'])
     seq_base = graph.y['seq_base']
     dotB_aim = graph.y['dotB']
-    dotB_real = RNA.fold(seq_base)[0]
+    # d otB_real = RNA.fold(seq_base)[0]
+    dotB_real = graph.y['real_dotB']
     # distance = Levenshtein.distance(dotB_real, dotB_aim) / len(dotB_aim)
     distance = RNA.hamming_distance(dotB_real, dotB_aim) / len(dotB_aim)
     return distance
@@ -732,7 +734,8 @@ def get_topology_distance(graph, aim_edge_h):
     :param aim_edge_h:
     :return:
     """
-    real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    # real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    real_dotB = graph.y['real_dotB']
     real_edge_h = get_edge_h(real_dotB)
     distance = edge_distance(real_edge_h, aim_edge_h)
     return distance
@@ -741,9 +744,13 @@ def get_topology_distance_norm(graph, aim_edge_h):
     """
     获取标准化拓扑距离
     """
-    real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    # real_dotB = RNA.fold(graph.y['seq_base'])[0]
+    real_dotB = graph.y['real_dotB']
     real_edge_h = get_edge_h(real_dotB)
     l_real = len(real_dotB)
     l_aim = len(graph.y['dotB'])
     distance = edge_distance_norm(real_edge_h, aim_edge_h, l_real, l_aim)
     return distance
+
+def get_dotB(seq_base):
+    return RNA.fold(seq_base)[0]
