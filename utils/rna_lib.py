@@ -396,7 +396,7 @@ def random_init_sequence_pair(dotB, edge_index, max_size, action_space):
 # 建图
 #############################################################
 
-def get_graph(max_size=None, seq_base=None, seq_onehot=None, dotB=None, h_weight=2):
+def get_graph(dotB=None, max_size=None, seq_base=None, seq_onehot=None, h_weight=2):
     """
     由初始序列和，加入边的权重
     :param max_size: 最大长度，未设定即默认为本身长度
