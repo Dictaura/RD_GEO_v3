@@ -8,7 +8,7 @@ import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
-    get_distance_from_graph, get_topology_distance_norm
+    get_distance_from_graph, get_topology_distance_norm, get_dotB, structure_dotB2Edge
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -98,6 +98,13 @@ class RNA_Graphs_Env(gym.Env):
 
         self.last_energy_list = self.pool.map(get_energy_from_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
+
+        real_dotB_list = self.pool.map(get_dotB, self.graphs)
+        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
+
+        for i in range(len(self.graphs)):
+            self.graphs[i].y['real_dotB'] = real_dotB_list[i]
+            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
 
         if self.distance_type == 'hamming':
             self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
