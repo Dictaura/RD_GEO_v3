@@ -260,7 +260,7 @@ class PPO(nn.Module):
         # 产生动作，不是产生训练数据，梯度阶段
         with no_grad():
             # 特征提取
-            feature = self.backbone(x, edge_index, edge_weight)
+            feature = self.backbone(x, edge_index, edge_weight, max_size=100)
             # 计算动作概率
             action_prob = self.actor(feature, edge_index, max_size,edge_weight).cpu()
             action_prob_list = torch.split(action_prob, 1, dim=0)
