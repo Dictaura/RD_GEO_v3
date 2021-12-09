@@ -90,10 +90,18 @@ def main():
 
     ####### initialize environment hyperparameters ######
 
-    url_data = root + '/data/processed/rfam_learn/train/all.pt'
-    dataset = torch.load(url_data)
-    # dataset = sample(dataset, 10)
-    dataset = [dataset[0]]
+    # url_data = root + '/data/processed/rfam_learn/train/all.pt'
+    # dataset = torch.load(url_data)
+    # # dataset = sample(dataset, 10)
+    # dataset = [dataset[0]]
+    data_dir = root + '/data/raw/rfam_learn/train/1.rna'
+    dotB_list = []
+    f = open(data_dir)
+    iter_f = iter(f)
+    for line in iter_f:
+        line = line.replace('\n', '')
+        dotB_list.append(line)
+    dataset = dotB_list
     len_list = [len(graph.y['dotB']) for graph in dataset]
     max_size = max(len_list)
 
