@@ -102,7 +102,7 @@ class PPO_Log(nn.Module):
 
         # 构建网络
         self.backbone = BackBone(backboneParam.in_size, backboneParam.out_size, backboneParam.hide_size_list,
-                                 backboneParam.n_head_list, backboneParam.n_layers,
+                                 backboneParam.n_head_list, backboneParam.n_layers, backboneParam.conv1d_size,
                                  backboneParam.concat)
         self.critic = Critic(criticParam.in_size, criticParam.out_size, criticParam.hide_size_list, criticParam.hide_size_fc,
                                  criticParam.n_head_list, criticParam.n_layers,
@@ -155,7 +155,7 @@ class PPO_Log(nn.Module):
         edge_attr = Variable(data_batch_.edge_attr.to(device))
         edge_weight = edge_attr.view(-1, ).float()
         # feature extract
-        feature = self.backbone(x, edge_index, edge_weight)
+        feature = self.backbone(x, edge_index, max_size, edge_weight)
         # value
         values = self.critic(feature, edge_index, max_size, edge_weight)
         # action
@@ -184,7 +184,7 @@ class PPO_Log(nn.Module):
         # 产生动作，不是产生训练数据，梯度阶段
         with no_grad():
             # 特征提取
-            feature = self.backbone(x, edge_index, edge_weight)
+            feature = self.backbone(x, edge_index, max_size, edge_weight)
             # 计算动作概率
             action_prob = self.actor(feature, edge_index, max_size,edge_weight).cpu()
             action_prob_list = torch.split(action_prob, 1, dim=0)
