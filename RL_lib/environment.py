@@ -8,7 +8,7 @@ import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
-    get_distance_from_graph, get_topology_distance_norm, get_dotB, structure_dotB2Edge, get_graph
+    get_distance_from_graph, get_topology_distance_norm, structure_dotB2Edge, get_graph, get_dotB_from_graph
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -101,7 +101,7 @@ class RNA_Graphs_Env(gym.Env):
 
         init_result = list(init_result)
         init_result = list(zip(*init_result))
-        real_dotB_list = self.pool.map(get_dotB, self.graphs)
+        real_dotB_list = self.pool.map(get_dotB_from_graph, self.graphs)
         real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
         for i in range(len(self.graphs)):
             self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]

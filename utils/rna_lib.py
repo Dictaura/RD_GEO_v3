@@ -752,5 +752,8 @@ def get_topology_distance_norm(graph, aim_edge_h):
     distance = edge_distance_norm(real_edge_h, aim_edge_h, l_real, l_aim)
     return distance
 
-def get_dotB(seq_base):
-    return RNA.fold(seq_base)[0]
+def get_dotB_from_graph(graph):
+    return RNA.fold(graph.y['seq_base'])[0]
+
+def get_dotB(x):
+    pass

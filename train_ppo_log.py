@@ -102,7 +102,7 @@ def main():
         line = line.replace('\n', '')
         dotB_list.append(line)
     dataset = dotB_list
-    len_list = [len(graph.y['dotB']) for graph in dataset]
+    len_list = [len(dotB) for dotB in dataset]
     max_size = max(len_list)
 
     # 总步数
@@ -150,7 +150,7 @@ def main():
     # 每次训练的epoch
     K_epochs = 6
 
-    batch_size = 128
+    batch_size = 64
 
     # ppo的更新限制
     eps_clip = 0.1
