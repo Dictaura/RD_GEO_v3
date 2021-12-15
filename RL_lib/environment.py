@@ -159,6 +159,13 @@ class RNA_Graphs_Env(gym.Env):
         results = list(zip(*results))
         self.graphs = list(results[0])
         self.forbidden_actions_list = list(results[1])
+
+        real_dotB_list = self.pool.map(get_dotB_from_graph, self.graphs)
+        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
+        for i in range(len(self.graphs)):
+            self.graphs[i].y['real_dotB'] = real_dotB_list[i]
+            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
+
         if ep % self.cal_freq == 0:
             energy_list = self.pool.map(get_energy_from_graph, self.graphs)
             energy_list = np.array(list(energy_list))
