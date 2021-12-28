@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import numpy as np
 from utils.rna_lib import seq_onehot2Base, get_energy_from_onehot, get_energy_from_base, \
-    get_distance_from_base, get_topology_distance, get_pair_ratio
+    get_distance_from_base, get_topology_distance, get_pair_ratio, get_real_graph
 from random import choice, sample
 import multiprocessing as mp
 import pathos.multiprocessing as pathos_mp
@@ -244,8 +244,13 @@ def main():
         # ratio = get_pair_ratio(env.graphs[0], 4)
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
-        state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
-        state_.edge_attr = Variable(state_.edge_attr.to(device))
+        # state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
+        # state_.edge_attr = Variable(state_.edge_attr.to(device))
+
+        real_state_list = pool_main.map(get_real_graph, state)
+        real_state_ = torch_geometric.data.Batch.from_data_list(real_state_list)
+        # real_state_.x, real_state_.edge_index = Variable(real_state_.x.float().to(device)), Variable(real_state_.edge_index.to(device))
+        # real_state_.edge_attr = Variable(real_state_.edge_attr.to(device))
 
         # 计算奖励跳步
         cal_freq = int(cal_freq_end + (cal_freq_start - cal_freq_end) * math.exp(-1. * time_step / cal_freq_decay))
@@ -266,7 +271,7 @@ def main():
             # plt.show()
 
             # 智能体产生动作
-            actions, action_log_probs = agent.work(state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
+            actions, action_log_probs = agent.work(state_, real_state_, env.len_list, max_size, env.forbidden_actions_list, type_=action_type)
 
             # 环境执行动作
             next_state, reward_list, is_termial, done_list, ids = env.step(actions, t)
@@ -324,8 +329,10 @@ def main():
             reward_per_step = np.array(reward_list).mean()
             # 更新state
             state_ = torch_geometric.data.Batch.from_data_list(env.graphs).clone()
-            state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
-            state_.edge_attr = Variable(state_.edge_attr.to(device))
+            # state_.x, state_.edge_index = Variable(state_.x.float().to(device)), Variable(state_.edge_index.to(device))
+            # state_.edge_attr = Variable(state_.edge_attr.to(device))
+            real_state_list = pool_main.map(get_real_graph, env.graphs)
+            real_state_ = torch_geometric.data.Batch.from_data_list(real_state_list)
             # tqdm更新显示
                 # pbar.set_postfix({'ratio': env.last_ratio_list.mean()})
                 # pbar.update(1)
