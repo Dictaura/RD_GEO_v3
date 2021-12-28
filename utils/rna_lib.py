@@ -415,6 +415,16 @@ def get_graph(dotB=None, max_size=None, seq_base=None, seq_onehot=None, h_weight
 
     edge_index = structure_dotB2Edge(dotB)
 
+    edge_attr = get_edge_attr(edge_index, h_weight)
+
+    y = {'dotB': dotB, 'seq_base': seq_base, 'real_dotB': dotB, 'real_edge_index': edge_index, 'real_attr': edge_attr}
+
+    graph = torch_geometric.data.Data(x=seq_onehot, y=y, edge_index=edge_index, edge_attr=edge_attr)
+
+    return graph
+
+
+def get_edge_attr(edge_index, h_weight=2):
     edge_attr = []
 
     for i in range(edge_index.shape[1]):
@@ -427,11 +437,14 @@ def get_graph(dotB=None, max_size=None, seq_base=None, seq_onehot=None, h_weight
 
     edge_attr = torch.tensor(edge_attr).view(-1, 1)
 
-    y = {'dotB': dotB, 'seq_base': seq_base}
+    return edge_attr
 
-    graph = torch_geometric.data.Data(x=seq_onehot, y=y, edge_index=edge_index, edge_attr=edge_attr)
-
-    return graph
+def get_real_graph(graph):
+    x = graph.x.clone()
+    edge_index = graph.y['real_edge_index']
+    edge_attr = graph.y['real_attr']
+    new_graph = torch_geometric.data.Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+    return new_graph
 
 
 def graph_padding(graph, max_size=None):
