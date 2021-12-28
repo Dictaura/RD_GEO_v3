@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric.data
 from tqdm import tqdm
-from utils.rna_lib import get_distance_from_graph, get_energy_from_graph, forbidden_actions_pair
+from utils.rna_lib import get_distance_from_graph, get_energy_from_graph, forbidden_actions_pair, get_real_graph
 from collections import namedtuple
 from utils.config_ppo import device
 from networks.RD_Net_GEO import BackboneNet, ActorNet, CriticNet
@@ -148,14 +148,22 @@ class PPO_Log(nn.Module):
         self.buffer_cnt = 0
         self.buffer_loop = max_loop
 
-    def forward(self, data_batch, max_size, actions):
+    def forward(self, data_batch, real_data_batch, max_size, actions):
         data_batch_ = data_batch.clone().to(device)
         x = Variable(data_batch_.x.float().to(device))
         edge_index = Variable(data_batch_.edge_index.to(device))
         edge_attr = Variable(data_batch_.edge_attr.to(device))
         edge_weight = edge_attr.view(-1, ).float()
+
+        real_data_batch_ = real_data_batch.clone()
+        real_edge_index = Variable(real_data_batch_.edge_index.to(device))
+        real_edge_attr = Variable(real_data_batch_.edge_attr.to(device))
+        real_edge_weight = real_edge_attr.view(-1, ).float()
         # feature extract
-        feature = self.backbone(x, edge_index, max_size, edge_weight)
+        feature_aim = self.backbone(x, edge_index, max_size, edge_weight)
+        feature_real = self.backbone(x, real_edge_index, max_size, real_edge_weight)
+
+        feature = torch.cat([feature_aim, feature_real], dim=1)
         # value
         values = self.critic(feature, edge_index, max_size, edge_weight)
         # action
@@ -167,7 +175,7 @@ class PPO_Log(nn.Module):
 
         return action_log_probs, values, dist_entropy
 
-    def work(self, data_batch, len_list, max_size, forbidden_actions_list, type_='selectAction'):
+    def work(self, data_batch, real_data_batch, len_list, max_size, forbidden_actions_list, type_='selectAction'):
         """
         产生动作
         :param data_batch: 输入图batch
@@ -177,14 +185,26 @@ class PPO_Log(nn.Module):
         """
         # 由于actor会对图进行修改，所以要事先克隆
         data_batch_ = data_batch.clone().to(device)
+        real_data_batch_ = real_data_batch.clone().to(device)
+
         x = Variable(data_batch_.x.float().to(device))
+
         edge_index = Variable(data_batch_.edge_index.to(device))
+
         edge_attr = Variable(data_batch_.edge_attr.to(device))
         edge_weight = edge_attr.view(-1, ).float()
+
+        real_edge_index = Variable(real_data_batch_.edge_index.to(device))
+        real_edge_attr = Variable(real_data_batch_.edge_attr.to(device))
+        real_edge_weight = real_edge_attr.view(-1, ).float()
         # 产生动作，不是产生训练数据，梯度阶段
         with no_grad():
             # 特征提取
-            feature = self.backbone(x, edge_index, max_size, edge_weight)
+            feature_aim = self.backbone(x, edge_index, max_size, edge_weight)
+            feature_real = self.backbone(x, real_edge_index, max_size, real_edge_weight)
+
+            feature = torch.cat([feature_aim, feature_real], dim=1)
+
             # 计算动作概率
             action_prob = self.actor(feature, edge_index, max_size,edge_weight).cpu()
             action_prob_list = torch.split(action_prob, 1, dim=0)
@@ -267,6 +287,7 @@ class PPO_Log(nn.Module):
         Gt = torch.tensor(Gt, dtype=torch.float).to(device)
         actions = torch.tensor(actions).view(-1,).to(device)
         old_action_log_prob = torch.tensor(old_action_log_prob, dtype=torch.float).view(-1,).to(device)
+        real_graph_list = self.pool.map(get_real_graph, graphs)
 
         loss_a_all = 0
         loss_c_all = 0
@@ -284,11 +305,15 @@ class PPO_Log(nn.Module):
                 # 抽取图
                 graphs_index = get_element_index(graphs, index)
                 graphs_index = torch_geometric.data.Batch.from_data_list(graphs_index).to(device)
+
+                real_graphs_index = get_element_index(real_graph_list, index)
+                real_graphs_index = torch_geometric.data.Batch.from_data_list(real_graphs_index).to(device)
+
                 actions_index = actions[index]
                 # x, edge_index = Variable(graphs_index.x.float().to(device)), Variable(graphs_index.edge_index.to(device))
                 # edge_attr = Variable(graphs_index.edge_attr.to(device))
                 # 计算优势
-                action_log_probs, V, dist_entropy = self.forward(graphs_index, max_size, actions_index)
+                action_log_probs, V, dist_entropy = self.forward(graphs_index, real_graphs_index, max_size, actions_index)
                 delta = Gt_index.view(-1,) - V.detach().view(-1,)
                 advantage = delta.view(-1,)
 
