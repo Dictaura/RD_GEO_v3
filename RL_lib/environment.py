@@ -8,7 +8,8 @@ import os
 from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
-    get_distance_from_graph, get_topology_distance_norm, structure_dotB2Edge, get_graph, get_dotB_from_graph
+    get_distance_from_graph, get_topology_distance_norm, structure_dotB2Edge, get_graph, get_dotB_from_graph, \
+    get_edge_attr
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -102,11 +103,13 @@ class RNA_Graphs_Env(gym.Env):
         init_result = list(init_result)
         init_result = list(zip(*init_result))
         real_dotB_list = self.pool.map(get_dotB_from_graph, self.graphs)
-        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
+        real_edge_index_list = self.pool.map(structure_dotB2Edge, real_dotB_list)
+        real_attr_list = self.pool.map(get_edge_attr, real_edge_index_list)
         for i in range(len(self.graphs)):
             self.graphs[i].y['seq_base'], self.graphs[i].x = init_result[0][i], init_result[1][i]
             self.graphs[i].y['real_dotB'] = real_dotB_list[i]
-            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
+            self.graphs[i].y['real_edge_index'] = real_edge_index_list[i]
+            self.graphs[i].y['real_attr'] = real_attr_list[i]
 
         self.last_energy_list = self.pool.map(get_energy_from_graph, self.graphs)
         self.last_energy_list = np.array(list(self.last_energy_list))
@@ -161,10 +164,12 @@ class RNA_Graphs_Env(gym.Env):
         self.forbidden_actions_list = list(results[1])
 
         real_dotB_list = self.pool.map(get_dotB_from_graph, self.graphs)
-        real_edge_index = self.pool.map(structure_dotB2Edge, real_dotB_list)
+        real_edge_index_list = self.pool.map(structure_dotB2Edge, real_dotB_list)
+        real_attr_list = self.pool.map(get_edge_attr, real_edge_index_list)
         for i in range(len(self.graphs)):
             self.graphs[i].y['real_dotB'] = real_dotB_list[i]
-            self.graphs[i].y['real_edge_index'] = real_edge_index[i]
+            self.graphs[i].y['real_edge_index'] = real_edge_index_list[i]
+            self.graphs[i].y['real_attr'] = real_attr_list[i]
 
         if ep % self.cal_freq == 0:
             energy_list = self.pool.map(get_energy_from_graph, self.graphs)
@@ -215,6 +220,14 @@ class RNA_Graphs_Env(gym.Env):
         # self.last_ratio_list = ratio_list
 
         return torch_geometric.data.Batch.from_data_list(self.graphs).clone().to_data_list(), reward_list, is_terminal, done_list, self.ids.copy()
+
+    @classmethod
+    def _get_real_graph(cls, graph):
+        x = graph.x.clone()
+        edge_index = graph.y['real_edge_index']
+        edge_attr = graph.y['real_attr']
+        new_graph = torch_geometric.data.Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        return new_graph
 
     def remove_graph(self, orders):
         """
