@@ -392,6 +392,53 @@ def random_init_sequence_pair(dotB, edge_index, max_size, action_space):
     return seq_base, seq_onehot
 
 
+def simple_init_sequence(dotB, base_order, max_size=None):
+    l = len(dotB)
+    seq_base = base_list[base_order] * l
+    seq_onehot = [onehot_list[base_order]] * l
+    seq_onehot += [[0, 0, 0, 0]] * (max_size - l)
+    seq_onehot = torch.tensor(seq_onehot)
+    return seq_base, seq_onehot
+
+def simple_init_sequence_pair(dotB, edge_index, base_order, pair_order, max_size, action_space):
+    if action_space == 4:
+        base_pair_dict = base_pair_dict_4
+        base_pair_list = base_pair_list_4
+    elif action_space == 6:
+        base_pair_dict = base_pair_dict_6
+        base_pair_list = base_pair_list_6
+
+    base = base_list[base_order]
+    onehot = onehot_list[base_order]
+    pair_base = base_pair_list[pair_order]
+
+    l = len(dotB)
+    seq_base = ''
+    # for i in range(l):
+    #     base_tmp, _ = random_base()
+    #     seq_base += base_tmp
+    seq_base = base * l
+    seq_onehot = [np.array(onehot)] * max_size
+    seq_base = list(seq_base)
+
+    for i in range(edge_index.shape[1]):
+        place = edge_index[0][i]
+        pair_place = edge_index[1][i]
+        # if place > pair_place:
+        #     continue
+        #if np.all(seq_onehot[place] == 0.):
+        # base_tmp = seq_base[place]
+        # seq_onehot[place] = base2Onehot().numpy()
+        if place < pair_place-1:
+            seq_base[place] = pair_base[0]
+            seq_onehot[place] = base2Onehot(pair_base[0]).numpy()
+            seq_base[pair_place] = pair_base[1]
+            seq_onehot[pair_place] = base2Onehot(pair_base[1]).numpy()
+    seq_onehot = torch.tensor(seq_onehot)
+    seq_base = ''.join(seq_base)
+    return seq_base, seq_onehot
+
+
 #############################################################
 # 建图
 #############################################################
