@@ -163,7 +163,8 @@ class PPO_Log(nn.Module):
         feature_aim = self.backbone(x, edge_index, max_size, edge_weight)
         feature_real = self.backbone(x, real_edge_index, max_size, real_edge_weight)
 
-        feature = torch.cat([feature_aim, feature_real], dim=1)
+        # feature = torch.cat([feature_aim, feature_real], dim=1)
+        feature = feature_aim - feature_real
         # value
         values = self.critic(feature, edge_index, max_size, edge_weight)
         # action
@@ -203,7 +204,8 @@ class PPO_Log(nn.Module):
             feature_aim = self.backbone(x, edge_index, max_size, edge_weight)
             feature_real = self.backbone(x, real_edge_index, max_size, real_edge_weight)
 
-            feature = torch.cat([feature_aim, feature_real], dim=1)
+            # feature = torch.cat([feature_aim, feature_real], dim=1)
+            feature = feature_aim - feature_real
 
             # 计算动作概率
             action_prob = self.actor(feature, edge_index, max_size,edge_weight).cpu()
