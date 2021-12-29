@@ -1,19 +1,13 @@
 import RNA
 
-seq1 = 'UACACAGAAUAGGGUCUUCCCACGCGACCGGGACAGGAACGAAACUAAAAGACCGACAGGUGACGCGGCAGUGGCCGCCCCGAAGCUCUUACCUCAGGACCCUG'
-seq2 = 'UUCUAAAGUAGCAACCUGUUUAGACAGGGUGGUCCUGGGGGUCAGCCCACAGAGGAGGUCCUCGGAGGCUGGCCCCAGCUCUAAGGGCCAUUUGAUGGCAGUACCAAUGUGGGUGUCCCCACAUUGUAGUUGCCAUUCACAGGGUGUC'
-dotB = RNA.cofold(seq1, seq2)
-dotB2 = RNA.fold(seq1)
+from utils.rna_lib import get_graph, random_init_sequence_pair, get_pair_ratio
 
-# graph = get_graph(seq_base=seq, dotB=dotB)
-#
-# ratio1 = get_pair_ratio(graph, 4)
-#
-# seq, onehot = random_init_sequence_pair(dotB, graph.edge_index, max_size=len(dotB), action_space=4)
-#
-# graph.x = onehot
-# graph.y['seq_base'] = seq
-#
-# ratio2 = get_pair_ratio(graph, 4)
+dataset = ['...((((((((...)))))((.........))................((((...(((((((((((....))))))..)))))...)))).(((..((.(((....(((((..((....)).)))))....)))...))..)))..(((((..(.((((....)))))..)))))(((((.......)))))....((((((((.(((.((((((((....)))))))))))..))))).))).....))).']
 
-print(1)
+graph = get_graph(dotB=dataset[0])
+
+graph = random_init_sequence_pair(graph.y['dotB'], graph.edge_index, max_size=len(dataset[0]), action_space=4)
+
+ratio = get_pair_ratio(graph, action_space=4)
+
+print(ratio)
