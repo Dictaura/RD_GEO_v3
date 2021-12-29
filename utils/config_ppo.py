@@ -20,7 +20,9 @@ backboneParam_dict = {
     'n_layers': 3,
     'dropout': 0.,
     'alpha': 0.5,
-    'concat': True
+    'concat': True,
+    'use_conv1d': False,
+    'use_linear': False
 }
 
 for key, value in backboneParam_dict.items():

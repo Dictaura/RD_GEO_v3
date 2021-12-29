@@ -5,7 +5,7 @@ import torch_geometric
 import torch_geometric.nn.conv as conv_g
 
 class GAT_Multi_heads(nn.Module):
-    def __init__(self, in_size, out_size, hide_size, n_heads):
+    def __init__(self, in_size, out_size, hide_size, n_heads, use_linear=False):
         super(GAT_Multi_heads, self).__init__()
         self.in_size = in_size
         self.out_size = out_size
@@ -13,16 +13,20 @@ class GAT_Multi_heads(nn.Module):
         self.n_heads = n_heads
 
         self.GAT = conv_g.GATConv(self.in_size, self.hide_size, self.n_heads, bias=False)
-        self.GCN = conv_g.GCNConv(self.hide_size * self.n_heads, self.out_size, bias=False, normalize=True)
+        self.fc = None
+        if use_linear:
+            self.fc = nn.Linear(self.hide_size * self.n_heads, self.out_size, bias=False)
 
     def forward(self, x, edge_index, edge_weight=None):
         y_gat = self.GAT(x, edge_index)
-        y = self.GCN(y_gat, edge_index, edge_weight=edge_weight)
+        y = y_gat
+        if self.fc is not None:
+            y = F.relu(self.fc(y_gat))
         return y
 
 
 class BackboneNet(nn.Module):
-    def __init__(self, in_size, out_size, hide_size_list, n_head_list, n_layers, conv1d_size, concat=True, use_conv1d=False):
+    def __init__(self, in_size, out_size, hide_size_list, n_head_list, n_layers, conv1d_size, concat=True, use_conv1d=False, use_linear=False):
         super(BackboneNet, self).__init__()
         self.in_size = in_size
         self.conv1d_size = conv1d_size

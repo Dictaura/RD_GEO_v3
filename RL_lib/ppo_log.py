@@ -103,7 +103,7 @@ class PPO_Log(nn.Module):
         # 构建网络
         self.backbone = BackBone(backboneParam.in_size, backboneParam.out_size, backboneParam.hide_size_list,
                                  backboneParam.n_head_list, backboneParam.n_layers, backboneParam.conv1d_size,
-                                 backboneParam.concat)
+                                 backboneParam.concat, use_conv1d=backboneParam.use_conv1d, use_linear=backboneParam.use_linear)
         self.critic = Critic(criticParam.in_size, criticParam.out_size, criticParam.hide_size_list, criticParam.hide_size_fc,
                                  criticParam.n_head_list, criticParam.n_layers,
                              criticParam.concat)
