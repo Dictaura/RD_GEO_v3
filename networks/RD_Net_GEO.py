@@ -45,12 +45,14 @@ class BackboneNet(nn.Module):
 
         self.layers_gat = []
 
+        layer_out_size = in_size
         for i in range(n_layers):
-            self.layers_gat.append(GAT_Multi_heads(self.size_layer_list[i],
+            self.layers_gat.append(GAT_Multi_heads(layer_out_size,
                                                    self.size_layer_list[i+1],
                                                    self.size_layer_list[i+1],
                                                    self.n_head_list[i]))
             self.add_module('GAT_block_{}'.format(i), self.layers_gat[i])
+            layer_out_size = self.size_layer_list[i+1] * self.n_head_list[i] if not use_linear else self.size_layer_list[i+1]
 
         self.layers_gat = nn.ModuleList(self.layers_gat)
 

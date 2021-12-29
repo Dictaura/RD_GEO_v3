@@ -14,8 +14,8 @@ num_change = 4
 backboneParam_dict = {
     'conv1d_size': 32,
     'in_size': 4,
-    'out_size': 32,
-    'hide_size_list': [8, 16],
+    'out_size': 16,
+    'hide_size_list': [4, 8],
     'n_head_list': [2, 2, 2],
     'n_layers': 3,
     'dropout': 0.,
