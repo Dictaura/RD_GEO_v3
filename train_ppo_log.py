@@ -58,8 +58,8 @@ def main():
 
     # 时间统计
     # 程序时间统计
-    time_sum_dir = log_dir_root + '/program.prof'
-    cProfile.run('re.compile("ccc")', filename=time_sum_dir)
+    # time_sum_dir = log_dir_root + '/program.prof'
+    # cProfile.run('re.compile("ccc")', filename=time_sum_dir)
 
     # 日志位置
     log_dir = log_dir_root + '/Logs'
@@ -101,7 +101,8 @@ def main():
     for line in iter_f:
         line = line.replace('\n', '')
         dotB_list.append(line)
-    dataset = dotB_list
+    # dataset = dotB_list
+    dataset = ['...((((((((...)))))((.........))................((((...(((((((((((....))))))..)))))...)))).(((..((.(((....(((((..((....)).)))))....)))...))..)))..(((((..(.((((....)))))..)))))(((((.......)))))....((((((((.(((.((((((((....)))))))))))..))))).))).....))).']
     len_list = [len(dotB) for dotB in dataset]
     max_size = max(len_list)
 
@@ -131,7 +132,7 @@ def main():
     # reward结算模式和done判定模式
     reward_type = 'distance'
     done_type = 'distance'
-    distance_type = 'hamming'
+    distance_type = 'hamming_norm'
     init = 'pair'
     action_space = num_change
 
@@ -240,7 +241,8 @@ def main():
         # current_ep_reward_np = torch.tensor(np.zeros(len(env.len_list)), dtype=float)
 
         # 重置环境，获得初始状态
-        state = env.reset()
+        state = env.reset(init_base_order=0, init_pair_order=0)
+        ratio_list = pool_main.map(get_pair_ratio, state, [action_space]*len(state))
         # ratio = get_pair_ratio(env.graphs[0], 4)
         # state为graph的list，用于记录；为运算，需要转为batch并克隆
         state_ = torch_geometric.data.Batch.from_data_list(state).clone()
