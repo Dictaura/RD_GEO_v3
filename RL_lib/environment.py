@@ -9,7 +9,7 @@ from torch_geometric.data import DataLoader as DataLoader_g
 from utils.rna_lib import random_init_sequence, random_init_sequence_pair, graph_padding, forbidden_actions_pair, \
     get_distance_from_graph_norm, get_edge_h, get_topology_distance, rna_act_pair, get_energy_from_graph, \
     get_distance_from_graph, get_topology_distance_norm, structure_dotB2Edge, get_graph, get_dotB_from_graph, \
-    get_edge_attr
+    get_edge_attr, simple_init_sequence, simple_init_sequence_pair
 from collections import namedtuple
 import torch_geometric
 from utils.config_ppo import device
@@ -75,9 +75,10 @@ class RNA_Graphs_Env(gym.Env):
         self.distance_type = distance_type
         self.init = init
         self.action_space = action_space
+
         pass
 
-    def reset(self):
+    def reset(self, init_base_order=None, init_pair_order=None):
         """
         环境的复位函数
         :return: 复位的图
@@ -92,12 +93,19 @@ class RNA_Graphs_Env(gym.Env):
         edge_index_list = [graph.edge_index for graph in self.graphs]
         self.aim_edge_h_list = list(self.pool.map(get_edge_h, dotB_list))
 
-        max_size = self.graphs[0].x.shape[0]
+        # max_size = self.graphs[0].x.shape[0]
         if self.init == 'unpair':
-            init_work = partial(random_init_sequence, max_size=max_size)
+            if init_base_order is None:
+                init_work = partial(random_init_sequence, max_size=self.max_size)
+            else:
+                init_work = partial(simple_init_sequence, base_order=init_base_order, max_size=self.max_size)
             init_result = self.pool.map(init_work, dotB_list)
         else:
-            init_work = partial(random_init_sequence_pair, max_size=max_size, action_space=self.action_space)
+            if init_base_order is None or init_pair_order is None:
+                init_work = partial(random_init_sequence_pair, max_size=self.max_size, action_space=self.action_space)
+            else:
+                init_work = partial(simple_init_sequence_pair, base_order=init_base_order,
+                                    pair_order=init_pair_order, max_size=self.max_size, action_space=self.action_space)
             init_result = self.pool.map(init_work, dotB_list, edge_index_list)
 
         init_result = list(init_result)
@@ -117,7 +125,7 @@ class RNA_Graphs_Env(gym.Env):
         if self.distance_type == 'hamming':
             self.last_distance_list = self.pool.map(get_distance_from_graph, self.graphs)
         elif self.distance_type == 'hamming_norm':
-            self.last_energy_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
+            self.last_distance_list = self.pool.map(get_distance_from_graph_norm, self.graphs)
         elif self.distance_type == 'topo':
             self.last_distance_list = self.pool.map(get_topology_distance, self.graphs, self.aim_edge_h_list)
         elif self.distance_type == 'topo_norm':
